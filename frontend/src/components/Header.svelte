@@ -10,11 +10,14 @@
     StopCircle,
     Package,
     ChevronDown,
+    HardDrive,
   } from '@lucide/svelte';
-  import type { SystemOverview } from '../types';
+  import type { SystemOverview, DiskUsageSummary } from '../types';
 
   let {
     overview,
+    diskUsage = null,
+    activeTab = $bindable<'containers' | 'images'>('containers'),
     searchQuery = $bindable(''),
     isDark,
     onToggleTheme,
@@ -23,6 +26,8 @@
     isRefreshing,
   } = $props<{
     overview: SystemOverview | null;
+    diskUsage?: DiskUsageSummary | null;
+    activeTab: 'containers' | 'images';
     searchQuery: string;
     isDark: boolean;
     onToggleTheme: () => void;
@@ -33,29 +38,64 @@
 </script>
 
 <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-30 transition-colors duration-200">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-      <!-- Logo & App Title -->
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-500/20">
-          <Boxes class="w-5 h-5" />
+      <!-- Left: Logo & Navigation Tabs -->
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-500/20">
+            <Boxes class="w-5 h-5" />
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="font-semibold text-lg text-slate-900 dark:text-slate-100 tracking-tight">
+                DockerManager
+              </h1>
+              {#if overview?.serverVersion}
+                <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                  v{overview.serverVersion}
+                </span>
+              {/if}
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+              Gestor de Contenedores y Recursos
+            </p>
+          </div>
         </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="font-semibold text-lg text-slate-900 dark:text-slate-100 tracking-tight">
-              DockerManager
-            </h1>
-            {#if overview?.serverVersion}
-              <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                v{overview.serverVersion}
+
+        <!-- Navigation Tabs Switcher -->
+        <nav class="flex items-center p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/60 text-xs">
+          <button
+            onclick={() => (activeTab = 'containers')}
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all {activeTab === 'containers' ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
+          >
+            <Boxes class="w-3.5 h-3.5" />
+            <span>Contenedores</span>
+            {#if overview}
+              <span class="text-[10px] font-mono px-1.5 py-0.2 rounded-full {activeTab === 'containers' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'}">
+                {overview.containers}
               </span>
             {/if}
-          </div>
-          <p class="text-xs text-slate-500 dark:text-slate-400">
-            Gestión y monitoreo de contenedores
-          </p>
-        </div>
+          </button>
+
+          <button
+            onclick={() => (activeTab = 'images')}
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all {activeTab === 'images' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
+          >
+            <HardDrive class="w-3.5 h-3.5" />
+            <span>Imágenes y Disco</span>
+            {#if overview}
+              <span class="text-[10px] font-mono px-1.5 py-0.2 rounded-full {activeTab === 'images' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'}">
+                {overview.images}
+              </span>
+            {/if}
+            {#if diskUsage && diskUsage.danglingCount > 0}
+              <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="{diskUsage.danglingCount} capas huérfanas"></span>
+            {/if}
+          </button>
+        </nav>
       </div>
+
 
       <!-- Quick Metrics Bar -->
       {#if overview}
@@ -83,16 +123,19 @@
 
       <!-- Actions: Search, Refresh, Theme Toggle -->
       <div class="flex items-center gap-2.5">
-        <!-- Search -->
-        <div class="relative flex-1 md:w-56">
-          <Search class="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Buscar contenedor..."
-            bind:value={searchQuery}
-            class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors"
-          />
-        </div>
+        <!-- Search for Containers -->
+        {#if activeTab === 'containers'}
+          <div class="relative flex-1 md:w-56 animate-in fade-in duration-150">
+            <Search class="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Buscar contenedor..."
+              bind:value={searchQuery}
+              class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors"
+            />
+          </div>
+        {/if}
+
 
         <!-- Refresh Interval Selector with Theme-Proof Styling -->
         <div class="relative">

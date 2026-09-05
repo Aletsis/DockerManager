@@ -14,6 +14,10 @@ export function GetContainerStats(arg1) {
   return window['go']['main']['App']['GetContainerStats'](arg1);
 }
 
+export function GetDiskUsage() {
+  return window['go']['main']['App']['GetDiskUsage']();
+}
+
 export function GetOverview() {
   return window['go']['main']['App']['GetOverview']();
 }
@@ -22,12 +26,28 @@ export function ListContainers(arg1) {
   return window['go']['main']['App']['ListContainers'](arg1);
 }
 
+export function ListImages() {
+  return window['go']['main']['App']['ListImages']();
+}
+
 export function PauseContainer(arg1) {
   return window['go']['main']['App']['PauseContainer'](arg1);
 }
 
+export function PruneImages(arg1) {
+  return window['go']['main']['App']['PruneImages'](arg1);
+}
+
+export function PullImage(arg1) {
+  return window['go']['main']['App']['PullImage'](arg1);
+}
+
 export function RemoveContainer(arg1, arg2) {
   return window['go']['main']['App']['RemoveContainer'](arg1, arg2);
+}
+
+export function RemoveImage(arg1, arg2) {
+  return window['go']['main']['App']['RemoveImage'](arg1, arg2);
 }
 
 export function ResizeTerminal(arg1, arg2, arg3) {

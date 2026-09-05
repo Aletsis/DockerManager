@@ -52,3 +52,44 @@ type ContainerStats struct {
 	BlockWrite       uint64  `json:"blockWrite"`
 	PIDs             uint64  `json:"pids"`
 }
+
+// ImageInfo represents detailed information about a Docker image
+type ImageInfo struct {
+	ID          string   `json:"id"`
+	ShortID     string   `json:"shortId"`
+	Repository  string   `json:"repository"`
+	Tag         string   `json:"tag"`
+	RepoTags    []string `json:"repoTags"`
+	Created     int64    `json:"created"`
+	Size        int64    `json:"size"`
+	SharedSize  int64    `json:"sharedSize"`
+	Containers  int64    `json:"containers"`
+	InUse       bool     `json:"inUse"`
+	IsDangling  bool     `json:"isDangling"`
+}
+
+// DiskUsageSummary summarizes disk usage metrics for images and dangling assets
+type DiskUsageSummary struct {
+	TotalImages     int   `json:"totalImages"`
+	TotalSize       int64 `json:"totalSize"`
+	DanglingCount   int   `json:"danglingCount"`
+	DanglingSize    int64 `json:"danglingSize"`
+	ReclaimableSize int64 `json:"reclaimableSize"`
+}
+
+// PruneResult represents the outcome of an image prune cleanup operation
+type PruneResult struct {
+	ImagesDeleted  []string `json:"imagesDeleted"`
+	SpaceReclaimed uint64   `json:"spaceReclaimed"`
+}
+
+// PullProgressEvent reports streaming progress for image pull operations
+type PullProgressEvent struct {
+	ID       string `json:"id"`
+	Status   string `json:"status"`
+	Progress string `json:"progress"`
+	Current  int64  `json:"current"`
+	Total    int64  `json:"total"`
+	Error    string `json:"error,omitempty"`
+}
+

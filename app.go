@@ -173,3 +173,47 @@ func (a *App) CloseTerminal(sessionID string) error {
 	return nil
 }
 
+// ListImages returns list of all local images
+func (a *App) ListImages() ([]docker.ImageInfo, error) {
+	if err := a.checkService(); err != nil {
+		return nil, err
+	}
+	return a.dockerService.ListImages(a.ctx)
+}
+
+// GetDiskUsage returns aggregated metrics of image storage and reclaimable space
+func (a *App) GetDiskUsage() (*docker.DiskUsageSummary, error) {
+	if err := a.checkService(); err != nil {
+		return nil, err
+	}
+	return a.dockerService.GetDiskUsage(a.ctx)
+}
+
+// PullImage pulls an image and streams progress events
+func (a *App) PullImage(imageName string) error {
+	if err := a.checkService(); err != nil {
+		return err
+	}
+
+	return a.dockerService.PullImage(a.ctx, imageName, func(event docker.PullProgressEvent) {
+		runtime.EventsEmit(a.ctx, "image:pull:progress", event)
+	})
+}
+
+// RemoveImage removes an image by ID or name
+func (a *App) RemoveImage(id string, force bool) error {
+	if err := a.checkService(); err != nil {
+		return err
+	}
+	return a.dockerService.RemoveImage(a.ctx, id, force)
+}
+
+// PruneImages cleans dangling or unused images and returns reclaimed space
+func (a *App) PruneImages(danglingOnly bool) (*docker.PruneResult, error) {
+	if err := a.checkService(); err != nil {
+		return nil, err
+	}
+	return a.dockerService.PruneImages(a.ctx, danglingOnly)
+}
+
+

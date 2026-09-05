@@ -104,7 +104,73 @@ export namespace docker {
 	        this.pids = source["pids"];
 	    }
 	}
+	export class DiskUsageSummary {
+	    totalImages: number;
+	    totalSize: number;
+	    danglingCount: number;
+	    danglingSize: number;
+	    reclaimableSize: number;
 	
+	    static createFrom(source: any = {}) {
+	        return new DiskUsageSummary(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.totalImages = source["totalImages"];
+	        this.totalSize = source["totalSize"];
+	        this.danglingCount = source["danglingCount"];
+	        this.danglingSize = source["danglingSize"];
+	        this.reclaimableSize = source["reclaimableSize"];
+	    }
+	}
+	export class ImageInfo {
+	    id: string;
+	    shortId: string;
+	    repository: string;
+	    tag: string;
+	    repoTags: string[];
+	    created: number;
+	    size: number;
+	    sharedSize: number;
+	    containers: number;
+	    inUse: boolean;
+	    isDangling: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ImageInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.shortId = source["shortId"];
+	        this.repository = source["repository"];
+	        this.tag = source["tag"];
+	        this.repoTags = source["repoTags"];
+	        this.created = source["created"];
+	        this.size = source["size"];
+	        this.sharedSize = source["sharedSize"];
+	        this.containers = source["containers"];
+	        this.inUse = source["inUse"];
+	        this.isDangling = source["isDangling"];
+	    }
+	}
+	
+	export class PruneResult {
+	    imagesDeleted: string[];
+	    spaceReclaimed: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PruneResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.imagesDeleted = source["imagesDeleted"];
+	        this.spaceReclaimed = source["spaceReclaimed"];
+	    }
+	}
 	export class SystemOverview {
 	    containers: number;
 	    containersRunning: number;

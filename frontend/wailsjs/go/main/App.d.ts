@@ -8,13 +8,23 @@ export function GetContainerLogs(arg1:string,arg2:number):Promise<string>;
 
 export function GetContainerStats(arg1:string):Promise<docker.ContainerStats>;
 
+export function GetDiskUsage():Promise<docker.DiskUsageSummary>;
+
 export function GetOverview():Promise<docker.SystemOverview>;
 
 export function ListContainers(arg1:boolean):Promise<Array<docker.ContainerInfo>>;
 
+export function ListImages():Promise<Array<docker.ImageInfo>>;
+
 export function PauseContainer(arg1:string):Promise<void>;
 
+export function PruneImages(arg1:boolean):Promise<docker.PruneResult>;
+
+export function PullImage(arg1:string):Promise<void>;
+
 export function RemoveContainer(arg1:string,arg2:boolean):Promise<void>;
+
+export function RemoveImage(arg1:string,arg2:boolean):Promise<void>;
 
 export function ResizeTerminal(arg1:string,arg2:number,arg3:number):Promise<void>;
 

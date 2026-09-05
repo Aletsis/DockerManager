@@ -6,7 +6,14 @@
   import StatsModal from './components/StatsModal.svelte';
   import ConfirmModal from './components/ConfirmModal.svelte';
   import TerminalModal from './components/TerminalModal.svelte';
-  import type { ContainerInfo, SystemOverview, ContainerStats } from './types';
+  import ImagesView from './components/ImagesView.svelte';
+  import type {
+    ContainerInfo,
+    SystemOverview,
+    ContainerStats,
+    ImageInfo,
+    DiskUsageSummary,
+  } from './types';
   import {
     ListContainers,
     GetOverview,
@@ -17,6 +24,10 @@
     UnpauseContainer,
     RemoveContainer,
     GetContainerStats,
+    ListImages,
+    GetDiskUsage,
+    RemoveImage,
+    PruneImages,
   } from '../wailsjs/go/main/App';
   import { AlertCircle, Box } from '@lucide/svelte';
 
@@ -27,13 +38,20 @@
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
+  // Navigation State
+  let activeTab = $state<'containers' | 'images'>('containers');
+
   // Data States
   let containers = $state<ContainerInfo[]>([]);
   let overview = $state<SystemOverview | null>(null);
   let statsMap = $state<Record<string, ContainerStats>>({});
+  let images = $state<ImageInfo[]>([]);
+  let diskUsage = $state<DiskUsageSummary | null>(null);
   let loading = $state<boolean>(true);
+  let imagesLoading = $state<boolean>(true);
   let isRefreshing = $state<boolean>(false);
   let error = $state<string | null>(null);
+
 
   // Filters & Search
   let searchQuery = $state<string>('');
@@ -69,13 +87,17 @@
   async function fetchData(manual = false) {
     if (manual) isRefreshing = true;
     try {
-      const [containerList, hostOverview] = await Promise.all([
+      const [containerList, hostOverview, imageList, diskUsageRes] = await Promise.all([
         ListContainers(true),
         GetOverview(),
+        ListImages(),
+        GetDiskUsage(),
       ]);
 
       containers = (containerList || []) as unknown as ContainerInfo[];
       overview = hostOverview as unknown as SystemOverview;
+      images = (imageList || []) as unknown as ImageInfo[];
+      diskUsage = diskUsageRes as unknown as DiskUsageSummary;
       error = null;
 
       // Query live stats for running containers
@@ -101,9 +123,11 @@
       error = err?.toString() || 'Error al conectar con el daemon de Docker';
     } finally {
       loading = false;
+      imagesLoading = false;
       if (manual) isRefreshing = false;
     }
   }
+
 
   function setupPolling() {
     if (pollTimer) clearInterval(pollTimer);
@@ -210,6 +234,31 @@
     }
   }
 
+  // Image action handlers
+  async function handleRemoveImage(id: string, force: boolean) {
+    actionLoading = id;
+    try {
+      await RemoveImage(id, force);
+      showToast('Imagen eliminada correctamente');
+      await fetchData();
+    } catch (err: any) {
+      showToast(`Error al eliminar imagen: ${err}`, 'error');
+    } finally {
+      actionLoading = '';
+    }
+  }
+
+  async function handlePrune(danglingOnly: boolean) {
+    try {
+      const res = await PruneImages(danglingOnly);
+      await fetchData();
+      return res as unknown as { imagesDeleted: string[]; spaceReclaimed: number };
+    } catch (err: any) {
+      showToast(`Error al ejecutar limpieza: ${err}`, 'error');
+      throw err;
+    }
+  }
+
   // Filtered containers
   const filteredContainers = $derived(
     containers.filter((c) => {
@@ -233,6 +282,8 @@
   <!-- Top Header -->
   <Header
     {overview}
+    {diskUsage}
+    bind:activeTab
     bind:searchQuery
     {isDark}
     onToggleTheme={() => (isDark = !isDark)}
@@ -241,9 +292,11 @@
     {isRefreshing}
   />
 
-  <!-- Scrollable Container List Area -->
+  <!-- Main Content Area -->
   <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-    <div class="max-w-7xl w-full mx-auto space-y-4 pb-16">
+    {#if activeTab === 'containers'}
+      <div class="max-w-7xl w-full mx-auto space-y-4 pb-16">
+
       <!-- Filter Chips Bar -->
       <div class="flex items-center justify-between gap-2 flex-wrap">
         <div class="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
@@ -339,7 +392,19 @@
         {/each}
       </div>
     </div>
+    {:else}
+      <ImagesView
+        {images}
+        {diskUsage}
+        loading={imagesLoading}
+        onRefresh={() => fetchData(true)}
+        onRemoveImage={handleRemoveImage}
+        onPrune={handlePrune}
+        {actionLoading}
+      />
+    {/if}
   </main>
+
 
   <!-- Floating Notification Toast -->
   {#if notification}
