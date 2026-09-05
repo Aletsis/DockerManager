@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"dockermanager/backend/docker"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct manages application state and services
@@ -125,3 +127,49 @@ func (a *App) GetContainerStats(id string) (*docker.ContainerStats, error) {
 	}
 	return a.dockerService.GetContainerStats(a.ctx, id)
 }
+
+// StartTerminal starts an interactive PTY shell inside a container
+func (a *App) StartTerminal(containerID string, shell string, rows uint, cols uint) (*docker.TerminalStartResult, error) {
+	if err := a.checkService(); err != nil {
+		return nil, err
+	}
+
+	return a.dockerService.StartTerminal(
+		a.ctx,
+		containerID,
+		shell,
+		rows,
+		cols,
+		func(sessID string, chunkBase64 string) {
+			runtime.EventsEmit(a.ctx, "terminal:data:"+sessID, chunkBase64)
+		},
+		func(sessID string) {
+			runtime.EventsEmit(a.ctx, "terminal:exit:"+sessID)
+		},
+	)
+}
+
+// WriteTerminal sends input data to an active container terminal session
+func (a *App) WriteTerminal(sessionID string, data string) error {
+	if err := a.checkService(); err != nil {
+		return err
+	}
+	return a.dockerService.WriteTerminal(sessionID, data)
+}
+
+// ResizeTerminal changes the window dimensions of a running container terminal
+func (a *App) ResizeTerminal(sessionID string, rows uint, cols uint) error {
+	if err := a.checkService(); err != nil {
+		return err
+	}
+	return a.dockerService.ResizeTerminal(a.ctx, sessionID, rows, cols)
+}
+
+// CloseTerminal terminates an active terminal session
+func (a *App) CloseTerminal(sessionID string) error {
+	if a.dockerService != nil {
+		return a.dockerService.CloseTerminal(sessionID)
+	}
+	return nil
+}
+

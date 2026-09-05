@@ -6,6 +6,7 @@
     Pause,
     Trash2,
     Terminal,
+    ScrollText,
     Activity,
     Copy,
     Check,
@@ -24,6 +25,7 @@
     onPause,
     onUnpause,
     onRemove,
+    onOpenTerminal,
     onViewLogs,
     onViewStats,
     actionLoading,
@@ -36,6 +38,7 @@
     onPause: (id: string) => void;
     onUnpause: (id: string) => void;
     onRemove: (id: string, name: string) => void;
+    onOpenTerminal: (id: string, name: string) => void;
     onViewLogs: (id: string, name: string) => void;
     onViewStats: (id: string, name: string) => void;
     actionLoading?: string;
@@ -208,13 +211,25 @@
         </button>
       {/if}
 
+      <!-- Terminal (Interactive Shell CLI) -->
+      <button
+        onclick={() => isRunning && onOpenTerminal(container.id, container.name)}
+        disabled={!isRunning || !!isLoadingThis}
+        title={isRunning ? "Terminal interactiva (Shell CLI)" : "Terminal interactiva (Inicia el contenedor para acceder)"}
+        class="p-1.5 rounded-lg border transition-colors {isRunning
+          ? 'border-indigo-500/30 bg-indigo-50/60 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 cursor-pointer'
+          : 'border-slate-200 dark:border-slate-800 text-slate-300 dark:text-slate-600 opacity-60 cursor-not-allowed'}"
+      >
+        <Terminal class="w-4 h-4" />
+      </button>
+
       <!-- Logs -->
       <button
         onclick={() => onViewLogs(container.id, container.name)}
-        title="Ver registros (Logs en vivo)"
+        title="Ver registros (Logs)"
         class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
       >
-        <Terminal class="w-4 h-4" />
+        <ScrollText class="w-4 h-4" />
       </button>
 
       <!-- Stats Monitor -->

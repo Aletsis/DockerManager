@@ -133,6 +133,20 @@ export namespace docker {
 	        this.memTotal = source["memTotal"];
 	    }
 	}
+	export class TerminalStartResult {
+	    sessionId: string;
+	    shell: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new TerminalStartResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sessionId = source["sessionId"];
+	        this.shell = source["shell"];
+	    }
+	}
 
 }
 

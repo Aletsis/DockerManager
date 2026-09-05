@@ -5,6 +5,7 @@
   import LogsModal from './components/LogsModal.svelte';
   import StatsModal from './components/StatsModal.svelte';
   import ConfirmModal from './components/ConfirmModal.svelte';
+  import TerminalModal from './components/TerminalModal.svelte';
   import type { ContainerInfo, SystemOverview, ContainerStats } from './types';
   import {
     ListContainers,
@@ -40,6 +41,7 @@
   let refreshInterval = $state<number>(2000);
 
   // Modals & Actions
+  let activeTerminal = $state<{ id: string; name: string } | null>(null);
   let activeLogs = $state<{ id: string; name: string } | null>(null);
   let activeStats = $state<{ id: string; name: string } | null>(null);
   let confirmDelete = $state<{ id: string; name: string } | null>(null);
@@ -329,6 +331,7 @@
             onPause={handlePause}
             onUnpause={handleUnpause}
             onRemove={(id, name) => (confirmDelete = { id, name })}
+            onOpenTerminal={(id, name) => (activeTerminal = { id, name })}
             onViewLogs={(id, name) => (activeLogs = { id, name })}
             onViewStats={(id, name) => (activeStats = { id, name })}
             {actionLoading}
@@ -348,6 +351,14 @@
   {/if}
 
   <!-- Modals -->
+  {#if activeTerminal}
+    <TerminalModal
+      containerId={activeTerminal.id}
+      containerName={activeTerminal.name}
+      onClose={() => (activeTerminal = null)}
+    />
+  {/if}
+
   <LogsModal
     containerId={activeLogs?.id || null}
     containerName={activeLogs?.name || ''}
