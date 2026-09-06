@@ -1,9 +1,9 @@
 <script lang="ts">
-  import ContainerCard from '../components/containers/ContainerCard.svelte';
-  import ComposeStackCard from '../components/containers/ComposeStackCard.svelte';
-  import NetworkGroupCard from '../components/containers/NetworkGroupCard.svelte';
-  import { containersStore } from '../stores/containers.svelte';
-  import { uiStore } from '../stores/ui.svelte';
+  import ContainerCard from '../features/containers/components/ContainerCard.svelte';
+  import ComposeStackCard from '../features/containers/components/ComposeStackCard.svelte';
+  import NetworkGroupCard from '../features/containers/components/NetworkGroupCard.svelte';
+  import { containersStore } from '../features/containers/stores/containers.svelte';
+  import { uiStore } from '../shared/stores/ui.svelte';
   import { AlertCircle, Box, Plus, Layers, List, Network } from '@lucide/svelte';
 
   const { stackGroups, standaloneContainers } = $derived(containersStore.stackGroupsData);

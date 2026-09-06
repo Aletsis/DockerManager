@@ -5,211 +5,258 @@ import (
 	"fmt"
 	"sync"
 
-	"dockermanager/backend/docker"
+	containerapp "dockermanager/internal/application/container"
+	imageapp "dockermanager/internal/application/image"
+	networkapp "dockermanager/internal/application/network"
+	stackapp "dockermanager/internal/application/stack"
+	systemapp "dockermanager/internal/application/system"
+	terminalapp "dockermanager/internal/application/terminal"
+
+	containerdomain "dockermanager/internal/domain/container"
+	imagedomain "dockermanager/internal/domain/image"
+	systemdomain "dockermanager/internal/domain/system"
+	terminaldomain "dockermanager/internal/domain/terminal"
+
+	dockerinfra "dockermanager/internal/infrastructure/docker"
+	terminalinfra "dockermanager/internal/infrastructure/terminal"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// App struct manages application state and exposes Docker services to Wails
+// App is the Wails delivery controller orchestrating application use cases
 type App struct {
-	ctx           context.Context
-	mu            sync.Mutex
-	dockerService *docker.Service
+	ctx context.Context
+	mu  sync.Mutex
+
+	// Infrastructure Adapters
+	dockerClient    *dockerinfra.Client
+	terminalService *terminalinfra.Service
+
+	// Application Use Cases
+	listContainersUC *containerapp.ListContainersUseCase
+	lifecycleUC      *containerapp.ManageLifecycleUseCase
+	createUC         *containerapp.CreateContainerUseCase
+	telemetryUC      *containerapp.GetTelemetryUseCase
+
+	stackUC   *stackapp.ManageStackUseCase
+	networkUC *networkapp.ManageNetworkUseCase
+
+	listImagesUC  *imageapp.ListImagesUseCase
+	diskUsageUC   *imageapp.GetDiskUsageUseCase
+	pullImageUC   *imageapp.PullImageUseCase
+	removeImageUC *imageapp.RemoveImageUseCase
+	pruneImagesUC *imageapp.PruneImagesUseCase
+
+	overviewUC *systemapp.GetOverviewUseCase
+	terminalUC *terminalapp.ManageTerminalUseCase
 }
 
-// NewApp creates a new App application struct
+// NewApp creates a new App controller
 func NewApp() *App {
 	return &App{}
 }
 
-// startup is called when the app starts
+// startup is called by Wails when the application boots
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	svc, err := docker.NewService()
-	if err != nil {
-		fmt.Println("Warning: Failed to initialize Docker client:", err)
-	} else {
-		a.dockerService = svc
+	if err := a.ensureInitialized(); err != nil {
+		fmt.Println("Warning: Failed to initialize Docker infrastructure:", err)
 	}
 }
 
-// shutdown is called when the application terminates
+// shutdown is called by Wails when the application terminates
 func (a *App) shutdown(ctx context.Context) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	if a.dockerService != nil {
-		_ = a.dockerService.Close()
-		a.dockerService = nil
+
+	if a.terminalService != nil {
+		a.terminalService.CloseAll()
+	}
+	if a.dockerClient != nil {
+		_ = a.dockerClient.Close()
+		a.dockerClient = nil
 	}
 }
 
-// getService ensures a thread-safe connection to the Docker daemon
-func (a *App) getService() (*docker.Service, error) {
+// ensureInitialized lazily wires infrastructure and use cases with thread-safety
+func (a *App) ensureInitialized() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	if a.dockerService == nil {
-		svc, err := docker.NewService()
-		if err != nil {
-			return nil, fmt.Errorf("Docker daemon no disponible: %w", err)
-		}
-		a.dockerService = svc
+	if a.dockerClient != nil {
+		return nil
 	}
-	return a.dockerService, nil
+
+	cli, err := dockerinfra.NewClient()
+	if err != nil {
+		return fmt.Errorf("Docker daemon no disponible: %w", err)
+	}
+	a.dockerClient = cli
+
+	// Domain Ports implemented by Infrastructure Adapters
+	containerRepo := dockerinfra.NewContainerRepository(cli)
+	imageRepo := dockerinfra.NewImageRepository(cli)
+	stackRepo := dockerinfra.NewStackRepository(cli)
+	networkRepo := dockerinfra.NewNetworkRepository(cli)
+	systemRepo := dockerinfra.NewSystemRepository(cli)
+	a.terminalService = terminalinfra.NewService(cli)
+
+	// Application Layer Use Cases
+	a.listContainersUC = containerapp.NewListContainersUseCase(containerRepo)
+	a.lifecycleUC = containerapp.NewManageLifecycleUseCase(containerRepo)
+	a.createUC = containerapp.NewCreateContainerUseCase(containerRepo)
+	a.telemetryUC = containerapp.NewGetTelemetryUseCase(containerRepo)
+
+	a.stackUC = stackapp.NewManageStackUseCase(stackRepo)
+	a.networkUC = networkapp.NewManageNetworkUseCase(networkRepo)
+
+	a.listImagesUC = imageapp.NewListImagesUseCase(imageRepo)
+	a.diskUsageUC = imageapp.NewGetDiskUsageUseCase(imageRepo)
+	a.pullImageUC = imageapp.NewPullImageUseCase(imageRepo)
+	a.removeImageUC = imageapp.NewRemoveImageUseCase(imageRepo)
+	a.pruneImagesUC = imageapp.NewPruneImagesUseCase(imageRepo)
+
+	a.overviewUC = systemapp.NewGetOverviewUseCase(systemRepo)
+	a.terminalUC = terminalapp.NewManageTerminalUseCase(a.terminalService)
+
+	return nil
 }
 
-// GetOverview returns summary metrics of the Docker daemon
-func (a *App) GetOverview() (*docker.SystemOverview, error) {
-	svc, err := a.getService()
-	if err != nil {
+// GetOverview returns summary metrics of the Docker host
+func (a *App) GetOverview() (*systemdomain.Overview, error) {
+	if err := a.ensureInitialized(); err != nil {
 		return nil, err
 	}
-	return svc.GetOverview(a.ctx)
+	return a.overviewUC.Execute(a.ctx)
 }
 
-// ListContainers returns list of all containers
-func (a *App) ListContainers(all bool) ([]docker.ContainerInfo, error) {
-	svc, err := a.getService()
-	if err != nil {
+// ListContainers returns list of containers
+func (a *App) ListContainers(all bool) ([]containerdomain.Container, error) {
+	if err := a.ensureInitialized(); err != nil {
 		return nil, err
 	}
-	return svc.ListContainers(a.ctx, all)
+	return a.listContainersUC.Execute(a.ctx, all)
 }
 
 // StartContainer starts a container
 func (a *App) StartContainer(id string) error {
-	svc, err := a.getService()
-	if err != nil {
+	if err := a.ensureInitialized(); err != nil {
 		return err
 	}
-	return svc.StartContainer(a.ctx, id)
+	return a.lifecycleUC.Start(a.ctx, id)
 }
 
 // StopContainer stops a container
 func (a *App) StopContainer(id string) error {
-	svc, err := a.getService()
-	if err != nil {
+	if err := a.ensureInitialized(); err != nil {
 		return err
 	}
-	return svc.StopContainer(a.ctx, id)
+	return a.lifecycleUC.Stop(a.ctx, id)
 }
 
 // RestartContainer restarts a container
 func (a *App) RestartContainer(id string) error {
-	svc, err := a.getService()
-	if err != nil {
+	if err := a.ensureInitialized(); err != nil {
 		return err
 	}
-	return svc.RestartContainer(a.ctx, id)
-}
-
-// StartStack starts all non-running containers in a compose project
-func (a *App) StartStack(projectName string) error {
-	svc, err := a.getService()
-	if err != nil {
-		return err
-	}
-	return svc.StartStack(a.ctx, projectName)
-}
-
-// StopStack stops all running containers in a compose project
-func (a *App) StopStack(projectName string) error {
-	svc, err := a.getService()
-	if err != nil {
-		return err
-	}
-	return svc.StopStack(a.ctx, projectName)
-}
-
-// RestartStack restarts all containers in a compose project
-func (a *App) RestartStack(projectName string) error {
-	svc, err := a.getService()
-	if err != nil {
-		return err
-	}
-	return svc.RestartStack(a.ctx, projectName)
-}
-
-// StartNetwork starts all non-running containers connected to a Docker network
-func (a *App) StartNetwork(networkName string) error {
-	svc, err := a.getService()
-	if err != nil {
-		return err
-	}
-	return svc.StartNetwork(a.ctx, networkName)
-}
-
-// StopNetwork stops all running containers connected to a Docker network
-func (a *App) StopNetwork(networkName string) error {
-	svc, err := a.getService()
-	if err != nil {
-		return err
-	}
-	return svc.StopNetwork(a.ctx, networkName)
-}
-
-// RestartNetwork restarts all containers connected to a Docker network
-func (a *App) RestartNetwork(networkName string) error {
-	svc, err := a.getService()
-	if err != nil {
-		return err
-	}
-	return svc.RestartNetwork(a.ctx, networkName)
+	return a.lifecycleUC.Restart(a.ctx, id)
 }
 
 // PauseContainer pauses a container
 func (a *App) PauseContainer(id string) error {
-	svc, err := a.getService()
-	if err != nil {
+	if err := a.ensureInitialized(); err != nil {
 		return err
 	}
-	return svc.PauseContainer(a.ctx, id)
+	return a.lifecycleUC.Pause(a.ctx, id)
 }
 
 // UnpauseContainer resumes a paused container
 func (a *App) UnpauseContainer(id string) error {
-	svc, err := a.getService()
-	if err != nil {
+	if err := a.ensureInitialized(); err != nil {
 		return err
 	}
-	return svc.UnpauseContainer(a.ctx, id)
+	return a.lifecycleUC.Unpause(a.ctx, id)
 }
 
 // RemoveContainer deletes a container
 func (a *App) RemoveContainer(id string, force bool) error {
-	svc, err := a.getService()
-	if err != nil {
+	if err := a.ensureInitialized(); err != nil {
 		return err
 	}
-	return svc.RemoveContainer(a.ctx, id, force)
+	return a.lifecycleUC.Remove(a.ctx, id, force)
+}
+
+// StartStack starts all non-running containers in a compose stack
+func (a *App) StartStack(projectName string) error {
+	if err := a.ensureInitialized(); err != nil {
+		return err
+	}
+	return a.stackUC.StartStack(a.ctx, projectName)
+}
+
+// StopStack stops all running containers in a compose stack
+func (a *App) StopStack(projectName string) error {
+	if err := a.ensureInitialized(); err != nil {
+		return err
+	}
+	return a.stackUC.StopStack(a.ctx, projectName)
+}
+
+// RestartStack restarts all containers in a compose stack
+func (a *App) RestartStack(projectName string) error {
+	if err := a.ensureInitialized(); err != nil {
+		return err
+	}
+	return a.stackUC.RestartStack(a.ctx, projectName)
+}
+
+// StartNetwork starts all non-running containers attached to a network
+func (a *App) StartNetwork(networkName string) error {
+	if err := a.ensureInitialized(); err != nil {
+		return err
+	}
+	return a.networkUC.StartNetwork(a.ctx, networkName)
+}
+
+// StopNetwork stops all running containers attached to a network
+func (a *App) StopNetwork(networkName string) error {
+	if err := a.ensureInitialized(); err != nil {
+		return err
+	}
+	return a.networkUC.StopNetwork(a.ctx, networkName)
+}
+
+// RestartNetwork restarts all containers attached to a network
+func (a *App) RestartNetwork(networkName string) error {
+	if err := a.ensureInitialized(); err != nil {
+		return err
+	}
+	return a.networkUC.RestartNetwork(a.ctx, networkName)
 }
 
 // GetContainerLogs returns logs for a container
 func (a *App) GetContainerLogs(id string, tail int) (string, error) {
-	svc, err := a.getService()
-	if err != nil {
+	if err := a.ensureInitialized(); err != nil {
 		return "", err
 	}
-	return svc.GetContainerLogs(a.ctx, id, tail)
+	return a.telemetryUC.GetLogs(a.ctx, id, tail)
 }
 
 // GetContainerStats returns current resource utilization
-func (a *App) GetContainerStats(id string) (*docker.ContainerStats, error) {
-	svc, err := a.getService()
-	if err != nil {
+func (a *App) GetContainerStats(id string) (*containerdomain.Stats, error) {
+	if err := a.ensureInitialized(); err != nil {
 		return nil, err
 	}
-	return svc.GetContainerStats(a.ctx, id)
+	return a.telemetryUC.GetStats(a.ctx, id)
 }
 
 // StartTerminal starts an interactive PTY shell inside a container
-func (a *App) StartTerminal(containerID string, shell string, rows uint, cols uint) (*docker.TerminalStartResult, error) {
-	svc, err := a.getService()
-	if err != nil {
+func (a *App) StartTerminal(containerID string, shell string, rows uint, cols uint) (*terminaldomain.StartResult, error) {
+	if err := a.ensureInitialized(); err != nil {
 		return nil, err
 	}
 
-	return svc.StartTerminal(
+	return a.terminalUC.Start(
 		a.ctx,
 		containerID,
 		shell,
@@ -226,87 +273,79 @@ func (a *App) StartTerminal(containerID string, shell string, rows uint, cols ui
 
 // WriteTerminal sends input data to an active container terminal session
 func (a *App) WriteTerminal(sessionID string, data string) error {
-	svc, err := a.getService()
-	if err != nil {
+	if err := a.ensureInitialized(); err != nil {
 		return err
 	}
-	return svc.WriteTerminal(sessionID, data)
+	return a.terminalUC.Write(sessionID, data)
 }
 
 // ResizeTerminal changes the window dimensions of a running container terminal
 func (a *App) ResizeTerminal(sessionID string, rows uint, cols uint) error {
-	svc, err := a.getService()
-	if err != nil {
+	if err := a.ensureInitialized(); err != nil {
 		return err
 	}
-	return svc.ResizeTerminal(a.ctx, sessionID, rows, cols)
+	return a.terminalUC.Resize(a.ctx, sessionID, rows, cols)
 }
 
 // CloseTerminal terminates an active terminal session
 func (a *App) CloseTerminal(sessionID string) error {
 	a.mu.Lock()
-	svc := a.dockerService
+	tuc := a.terminalUC
 	a.mu.Unlock()
 
-	if svc != nil {
-		return svc.CloseTerminal(sessionID)
+	if tuc != nil {
+		return tuc.Close(sessionID)
 	}
 	return nil
 }
 
-// ListImages returns list of all local images
-func (a *App) ListImages() ([]docker.ImageInfo, error) {
-	svc, err := a.getService()
-	if err != nil {
+// ListImages returns list of local images
+func (a *App) ListImages() ([]imagedomain.Image, error) {
+	if err := a.ensureInitialized(); err != nil {
 		return nil, err
 	}
-	return svc.ListImages(a.ctx)
+	return a.listImagesUC.Execute(a.ctx)
 }
 
-// GetDiskUsage returns aggregated metrics of image storage and reclaimable space
-func (a *App) GetDiskUsage() (*docker.DiskUsageSummary, error) {
-	svc, err := a.getService()
-	if err != nil {
+// GetDiskUsage returns aggregated metrics of image storage
+func (a *App) GetDiskUsage() (*imagedomain.DiskUsageSummary, error) {
+	if err := a.ensureInitialized(); err != nil {
 		return nil, err
 	}
-	return svc.GetDiskUsage(a.ctx)
+	return a.diskUsageUC.Execute(a.ctx)
 }
 
 // PullImage pulls an image and streams progress events
 func (a *App) PullImage(imageName string) error {
-	svc, err := a.getService()
-	if err != nil {
+	if err := a.ensureInitialized(); err != nil {
 		return err
 	}
 
-	return svc.PullImage(a.ctx, imageName, func(event docker.PullProgressEvent) {
+	return a.pullImageUC.Execute(a.ctx, imageName, func(event imagedomain.PullProgressEvent) {
 		runtime.EventsEmit(a.ctx, "image:pull:progress", event)
 	})
 }
 
 // RemoveImage removes an image by ID or name
 func (a *App) RemoveImage(id string, force bool) error {
-	svc, err := a.getService()
-	if err != nil {
+	if err := a.ensureInitialized(); err != nil {
 		return err
 	}
-	return svc.RemoveImage(a.ctx, id, force)
+	return a.removeImageUC.Execute(a.ctx, id, force)
 }
 
-// PruneImages cleans dangling or unused images and returns reclaimed space
-func (a *App) PruneImages(danglingOnly bool) (*docker.PruneResult, error) {
-	svc, err := a.getService()
-	if err != nil {
+// PruneImages cleans dangling or unused images
+func (a *App) PruneImages(danglingOnly bool) (*imagedomain.PruneResult, error) {
+	if err := a.ensureInitialized(); err != nil {
 		return nil, err
 	}
-	return svc.PruneImages(a.ctx, danglingOnly)
+	return a.pruneImagesUC.Execute(a.ctx, danglingOnly)
 }
 
 // CreateContainer creates and optionally starts a new container
-func (a *App) CreateContainer(req docker.CreateContainerRequest) (*docker.CreateContainerResult, error) {
-	svc, err := a.getService()
-	if err != nil {
+func (a *App) CreateContainer(req containerdomain.CreateSpec) (*containerdomain.CreateResult, error) {
+	if err := a.ensureInitialized(); err != nil {
 		return nil, err
 	}
-	return svc.CreateContainer(a.ctx, req)
+	return a.createUC.Execute(a.ctx, req)
 }

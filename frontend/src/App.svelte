@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import Header from './components/layout/Header.svelte';
+  import Header from './features/system/components/Header.svelte';
   import ContainersView from './views/ContainersView.svelte';
-  import ImagesView from './views/ImagesView.svelte';
-  import ModalManager from './components/modals/ModalManager.svelte';
-  import { uiStore } from './stores/ui.svelte';
-  import { containersStore } from './stores/containers.svelte';
-  import { imagesStore } from './stores/images.svelte';
+  import ImagesView from './features/images/views/ImagesView.svelte';
+  import ModalManager from './shared/components/ModalManager.svelte';
+  import { uiStore } from './shared/stores/ui.svelte';
+  import { containersStore } from './features/containers/stores/containers.svelte';
+  import { imagesStore } from './features/images/stores/images.svelte';
 
   onMount(() => {
     containersStore.fetchData();
