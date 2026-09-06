@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Avoid recursive loop when amending
+if [ "${GIT_AMENDING:-0}" = "1" ]; then
+  exit 0
+fi
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+BUMP_SCRIPT="${ROOT_DIR}/scripts/bump-version.sh"
+
+if [ ! -f "$BUMP_SCRIPT" ]; then
+  exit 0
+fi
+
+# Get last commit message
+MSG="$(git log -1 --pretty=%B)"
+
+# Ignore merges, rebases, or explicit skip
+if [[ "$MSG" == *"[skip-bump]"* ]] || [[ "$MSG" =~ ^Merge ]]; then
+  exit 0
+fi
+
+# Check version before auto-bump
+OLD_VER="$("${BUMP_SCRIPT}" get)"
+
+# Run auto bump based on commit message
+"${BUMP_SCRIPT}" auto "$MSG" > /dev/null
+
+NEW_VER="$("${BUMP_SCRIPT}" get)"
+
+# If version changed, amend the commit
+if [ "$OLD_VER" != "$NEW_VER" ]; then
+  git add \
+    "${ROOT_DIR}/version.json" \
+    "${ROOT_DIR}/internal/version/version.go" \
+    "${ROOT_DIR}/frontend/src/shared/version.ts" \
+    "${ROOT_DIR}/frontend/package.json" \
+    "${ROOT_DIR}/wails.json"
+  
+  GIT_AMENDING=1 git commit --amend --no-edit -q
+  echo "🚀 [DockerManager SemVer] Versión incrementada automáticamente a v${NEW_VER}"
+fi

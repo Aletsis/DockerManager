@@ -9,5 +9,9 @@
   "author": {
     "name": "Alexis Barron",
     "email": "alexis.barron.luna@gmail.com"
+  },
+  "info": {
+    "productName": "DockerManager",
+    "productVersion": "0.2.0"
   }
 }

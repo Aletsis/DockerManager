@@ -10,6 +10,10 @@ export function CreateContainer(arg1) {
   return window['go']['main']['App']['CreateContainer'](arg1);
 }
 
+export function GetAppVersion() {
+  return window['go']['main']['App']['GetAppVersion']();
+}
+
 export function GetContainerLogs(arg1, arg2) {
   return window['go']['main']['App']['GetContainerLogs'](arg1, arg2);
 }
@@ -30,16 +34,16 @@ export function InspectContainer(arg1) {
   return window['go']['main']['App']['InspectContainer'](arg1);
 }
 
-export function OpenURL(arg1) {
-  return window['go']['main']['App']['OpenURL'](arg1);
-}
-
 export function ListContainers(arg1) {
   return window['go']['main']['App']['ListContainers'](arg1);
 }
 
 export function ListImages() {
   return window['go']['main']['App']['ListImages']();
+}
+
+export function OpenURL(arg1) {
+  return window['go']['main']['App']['OpenURL'](arg1);
 }
 
 export function PauseContainer(arg1) {

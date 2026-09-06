@@ -1,6 +1,6 @@
-export namespace docker {
+export namespace container {
 	
-	export class ContainerNetworkInfo {
+	export class NetworkInfo {
 	    networkName: string;
 	    networkId: string;
 	    ipAddress: string;
@@ -9,7 +9,7 @@ export namespace docker {
 	    aliases?: string[];
 	
 	    static createFrom(source: any = {}) {
-	        return new ContainerNetworkInfo(source);
+	        return new NetworkInfo(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -40,7 +40,7 @@ export namespace docker {
 	        this.type = source["type"];
 	    }
 	}
-	export class ContainerInfo {
+	export class Container {
 	    id: string;
 	    shortId: string;
 	    names: string[];
@@ -52,7 +52,7 @@ export namespace docker {
 	    state: string;
 	    status: string;
 	    ports: PortMapping[];
-	    networks?: ContainerNetworkInfo[];
+	    networks?: NetworkInfo[];
 	    sizeRw: number;
 	    sizeRootFs: number;
 	    labels?: Record<string, string>;
@@ -62,7 +62,7 @@ export namespace docker {
 	    composeConfigFile?: string;
 	
 	    static createFrom(source: any = {}) {
-	        return new ContainerInfo(source);
+	        return new Container(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -78,7 +78,7 @@ export namespace docker {
 	        this.state = source["state"];
 	        this.status = source["status"];
 	        this.ports = this.convertValues(source["ports"], PortMapping);
-	        this.networks = this.convertValues(source["networks"], ContainerNetworkInfo);
+	        this.networks = this.convertValues(source["networks"], NetworkInfo);
 	        this.sizeRw = source["sizeRw"];
 	        this.sizeRootFs = source["sizeRootFs"];
 	        this.labels = source["labels"];
@@ -106,8 +106,49 @@ export namespace docker {
 		    return a;
 		}
 	}
+	export class CreateResult {
+	    id: string;
+	    warnings?: string[];
 	
-	export class ContainerStats {
+	    static createFrom(source: any = {}) {
+	        return new CreateResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.warnings = source["warnings"];
+	    }
+	}
+	export class CreateSpec {
+	    image: string;
+	    name?: string;
+	    cmd?: string[];
+	    ports?: string[];
+	    volumes?: string[];
+	    env?: string[];
+	    restartPolicy?: string;
+	    autoStart?: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new CreateSpec(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.image = source["image"];
+	        this.name = source["name"];
+	        this.cmd = source["cmd"];
+	        this.ports = source["ports"];
+	        this.volumes = source["volumes"];
+	        this.env = source["env"];
+	        this.restartPolicy = source["restartPolicy"];
+	        this.autoStart = source["autoStart"];
+	    }
+	}
+	
+	
+	export class Stats {
 	    id: string;
 	    name: string;
 	    cpuPercentage: number;
@@ -121,7 +162,7 @@ export namespace docker {
 	    pids: number;
 	
 	    static createFrom(source: any = {}) {
-	        return new ContainerStats(source);
+	        return new Stats(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -139,44 +180,11 @@ export namespace docker {
 	        this.pids = source["pids"];
 	    }
 	}
-	export class CreateContainerRequest {
-	    image: string;
-	    name: string;
-	    ports: string[];
-	    volumes: string[];
-	    env: string[];
-	    restartPolicy: string;
-	    autoStart: boolean;
+
+}
+
+export namespace image {
 	
-	    static createFrom(source: any = {}) {
-	        return new CreateContainerRequest(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.image = source["image"];
-	        this.name = source["name"];
-	        this.ports = source["ports"];
-	        this.volumes = source["volumes"];
-	        this.env = source["env"];
-	        this.restartPolicy = source["restartPolicy"];
-	        this.autoStart = source["autoStart"];
-	    }
-	}
-	export class CreateContainerResult {
-	    id: string;
-	    warnings: string[];
-	
-	    static createFrom(source: any = {}) {
-	        return new CreateContainerResult(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.warnings = source["warnings"];
-	    }
-	}
 	export class DiskUsageSummary {
 	    totalImages: number;
 	    totalSize: number;
@@ -197,7 +205,7 @@ export namespace docker {
 	        this.reclaimableSize = source["reclaimableSize"];
 	    }
 	}
-	export class ImageInfo {
+	export class Image {
 	    id: string;
 	    shortId: string;
 	    repository: string;
@@ -211,7 +219,7 @@ export namespace docker {
 	    isDangling: boolean;
 	
 	    static createFrom(source: any = {}) {
-	        return new ImageInfo(source);
+	        return new Image(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -229,7 +237,6 @@ export namespace docker {
 	        this.isDangling = source["isDangling"];
 	    }
 	}
-	
 	export class PruneResult {
 	    imagesDeleted: string[];
 	    spaceReclaimed: number;
@@ -244,7 +251,12 @@ export namespace docker {
 	        this.spaceReclaimed = source["spaceReclaimed"];
 	    }
 	}
-	export class SystemOverview {
+
+}
+
+export namespace system {
+	
+	export class Overview {
 	    containers: number;
 	    containersRunning: number;
 	    containersPaused: number;
@@ -256,7 +268,7 @@ export namespace docker {
 	    memTotal: number;
 	
 	    static createFrom(source: any = {}) {
-	        return new SystemOverview(source);
+	        return new Overview(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -272,18 +284,25 @@ export namespace docker {
 	        this.memTotal = source["memTotal"];
 	    }
 	}
-	export class TerminalStartResult {
+
+}
+
+export namespace terminal {
+	
+	export class StartResult {
 	    sessionId: string;
-	    shell: string;
+	    rows: number;
+	    cols: number;
 	
 	    static createFrom(source: any = {}) {
-	        return new TerminalStartResult(source);
+	        return new StartResult(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.sessionId = source["sessionId"];
-	        this.shell = source["shell"];
+	        this.rows = source["rows"];
+	        this.cols = source["cols"];
 	    }
 	}
 

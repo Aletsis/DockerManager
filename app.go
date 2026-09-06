@@ -19,6 +19,7 @@ import (
 
 	dockerinfra "dockermanager/internal/infrastructure/docker"
 	terminalinfra "dockermanager/internal/infrastructure/terminal"
+	"dockermanager/internal/version"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -120,6 +121,11 @@ func (a *App) ensureInitialized() error {
 	a.terminalUC = terminalapp.NewManageTerminalUseCase(a.terminalService)
 
 	return nil
+}
+
+// GetAppVersion returns the current application version of DockerManager
+func (a *App) GetAppVersion() string {
+	return version.Current
 }
 
 // GetOverview returns summary metrics of the Docker host

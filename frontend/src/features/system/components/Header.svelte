@@ -13,6 +13,7 @@
     HardDrive,
   } from '@lucide/svelte';
   import type { SystemOverview, DiskUsageSummary } from '../../../types';
+  import { APP_VERSION } from '../../../shared/version';
 
   let {
     overview,
@@ -51,11 +52,9 @@
               <h1 class="font-semibold text-lg text-slate-900 dark:text-slate-100 tracking-tight">
                 DockerManager
               </h1>
-              {#if overview?.serverVersion}
-                <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                  v{overview.serverVersion}
-                </span>
-              {/if}
+              <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60 font-medium">
+                v{APP_VERSION}
+              </span>
             </div>
             <p class="text-[11px] text-slate-500 dark:text-slate-400">
               Gestor de Contenedores y Recursos
