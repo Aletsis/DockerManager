@@ -14,46 +14,27 @@
     Clock,
     Network,
   } from '@lucide/svelte';
-  import type { ContainerInfo, ContainerStats } from '../types';
+  import type { ContainerInfo } from '../types';
   import { formatBytes, getStateColor, formatUptime } from '../utils';
+  import { containersStore } from '../stores/containers.svelte';
+  import { uiStore } from '../stores/ui.svelte';
 
   let {
     container,
-    stats,
     currentNetworkContext,
-    onStart,
-    onStop,
-    onRestart,
-    onPause,
-    onUnpause,
-    onRemove,
-    onOpenTerminal,
-    onViewLogs,
-    onViewStats,
-    actionLoading,
   } = $props<{
     container: ContainerInfo;
-    stats?: ContainerStats;
     currentNetworkContext?: string;
-    onStart: (id: string) => void;
-    onStop: (id: string) => void;
-    onRestart: (id: string) => void;
-    onPause: (id: string) => void;
-    onUnpause: (id: string) => void;
-    onRemove: (id: string, name: string) => void;
-    onOpenTerminal: (id: string, name: string) => void;
-    onViewLogs: (id: string, name: string) => void;
-    onViewStats: (id: string, name: string) => void;
-    actionLoading?: string;
   }>();
 
   let copied = $state(false);
 
+  const stats = $derived(containersStore.statsMap[container.id]);
   const isRunning = $derived(container.state === 'running');
   const isPaused = $derived(container.state === 'paused');
   const isExited = $derived(container.state === 'exited' || container.state === 'dead');
   const colors = $derived(getStateColor(container.state));
-  const isLoadingThis = $derived(actionLoading === container.id);
+  const isLoadingThis = $derived(containersStore.actionLoading === container.id);
 
   function copyId(e: MouseEvent) {
     e.stopPropagation();
@@ -218,46 +199,46 @@
       <!-- Start / Stop / Restart / Pause -->
       {#if isRunning}
         <button
-          onclick={() => onStop(container.id)}
+          onclick={() => containersStore.handleStop(container.id)}
           disabled={isLoadingThis}
           title="Detener contenedor"
-          class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-600 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 transition-colors"
+          class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-600 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 transition-colors cursor-pointer"
         >
           <Square class="w-4 h-4 fill-current" />
         </button>
 
         <button
-          onclick={() => onRestart(container.id)}
+          onclick={() => containersStore.handleRestart(container.id)}
           disabled={isLoadingThis}
           title="Reiniciar contenedor"
-          class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+          class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
         >
           <RotateCw class="w-4 h-4" />
         </button>
 
         <button
-          onclick={() => onPause(container.id)}
+          onclick={() => containersStore.handlePause(container.id)}
           disabled={isLoadingThis}
           title="Pausar contenedor"
-          class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-slate-600 hover:text-amber-600 dark:text-slate-300 dark:hover:text-amber-400 transition-colors"
+          class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-slate-600 hover:text-amber-600 dark:text-slate-300 dark:hover:text-amber-400 transition-colors cursor-pointer"
         >
           <Pause class="w-4 h-4" />
         </button>
       {:else if isPaused}
         <button
-          onclick={() => onUnpause(container.id)}
+          onclick={() => containersStore.handleUnpause(container.id)}
           disabled={isLoadingThis}
           title="Reanudar contenedor"
-          class="p-1.5 rounded-lg border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+          class="p-1.5 rounded-lg border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors cursor-pointer"
         >
           <Play class="w-4 h-4 fill-current" />
         </button>
       {:else}
         <button
-          onclick={() => onStart(container.id)}
+          onclick={() => containersStore.handleStart(container.id)}
           disabled={isLoadingThis}
           title="Iniciar contenedor"
-          class="p-1.5 rounded-lg border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+          class="p-1.5 rounded-lg border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors cursor-pointer"
         >
           <Play class="w-4 h-4 fill-current" />
         </button>
@@ -265,7 +246,7 @@
 
       <!-- Terminal (Interactive Shell CLI) -->
       <button
-        onclick={() => isRunning && onOpenTerminal(container.id, container.name)}
+        onclick={() => isRunning && uiStore.openTerminal(container.id, container.name)}
         disabled={!isRunning || !!isLoadingThis}
         title={isRunning ? "Terminal interactiva (Shell CLI)" : "Terminal interactiva (Inicia el contenedor para acceder)"}
         class="p-1.5 rounded-lg border transition-colors {isRunning
@@ -277,9 +258,9 @@
 
       <!-- Logs -->
       <button
-        onclick={() => onViewLogs(container.id, container.name)}
+        onclick={() => uiStore.openLogs(container.id, container.name)}
         title="Ver registros (Logs)"
-        class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+        class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
       >
         <ScrollText class="w-4 h-4" />
       </button>
@@ -287,9 +268,9 @@
       <!-- Stats Monitor -->
       {#if isRunning}
         <button
-          onclick={() => onViewStats(container.id, container.name)}
+          onclick={() => uiStore.openStats(container.id, container.name)}
           title="Monitoreo de recursos detallado"
-          class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+          class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
         >
           <Activity class="w-4 h-4" />
         </button>
@@ -298,10 +279,10 @@
       <!-- Remove -->
       {#if isExited || isPaused}
         <button
-          onclick={() => onRemove(container.id, container.name)}
+          onclick={() => uiStore.openConfirmDelete(container.id, container.name)}
           disabled={isLoadingThis}
           title="Eliminar contenedor"
-          class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+          class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
         >
           <Trash2 class="w-4 h-4" />
         </button>

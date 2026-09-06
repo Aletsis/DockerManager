@@ -1,10 +1,5 @@
 import type { ImageInfo, DiskUsageSummary, PruneResult } from '../types';
-import {
-  ListImages,
-  GetDiskUsage,
-  RemoveImage,
-  PruneImages,
-} from '../../wailsjs/go/main/App';
+import { dockerApi } from '../services/api';
 import { uiStore } from './ui.svelte';
 
 class ImagesStore {
@@ -16,11 +11,11 @@ class ImagesStore {
   async fetchImages() {
     try {
       const [imageList, diskUsageRes] = await Promise.all([
-        ListImages(),
-        GetDiskUsage(),
+        dockerApi.listImages(),
+        dockerApi.getDiskUsage(),
       ]);
-      this.images = (imageList || []) as unknown as ImageInfo[];
-      this.diskUsage = diskUsageRes as unknown as DiskUsageSummary;
+      this.images = imageList;
+      this.diskUsage = diskUsageRes;
     } catch (err: any) {
       uiStore.showToast(`Error al cargar imágenes: ${err}`, 'error');
     } finally {
@@ -31,7 +26,7 @@ class ImagesStore {
   async removeImage(id: string, force: boolean) {
     this.actionLoading = id;
     try {
-      await RemoveImage(id, force);
+      await dockerApi.removeImage(id, force);
       uiStore.showToast('Imagen eliminada correctamente');
       await this.fetchImages();
     } catch (err: any) {
@@ -43,10 +38,10 @@ class ImagesStore {
 
   async prune(danglingOnly: boolean): Promise<PruneResult | null> {
     try {
-      const res = await PruneImages(danglingOnly);
+      const res = await dockerApi.pruneImages(danglingOnly);
       await this.fetchImages();
       uiStore.showToast('Limpieza completada exitosamente');
-      return res as unknown as PruneResult;
+      return res;
     } catch (err: any) {
       uiStore.showToast(`Error al ejecutar limpieza: ${err}`, 'error');
       throw err;

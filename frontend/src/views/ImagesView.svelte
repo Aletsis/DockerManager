@@ -14,33 +14,15 @@
     RefreshCw,
     ShieldCheck,
     CheckCircle2,
-    Info,
     Play,
   } from '@lucide/svelte';
-  import type { ImageInfo, DiskUsageSummary } from '../types';
+  import type { ImageInfo } from '../types';
   import { formatBytes, formatRelativeTime } from '../utils';
-  import ConfirmModal from './ConfirmModal.svelte';
-  import PullImageModal from './PullImageModal.svelte';
-
-  let {
-    images = [],
-    diskUsage = null,
-    loading = false,
-    onRefresh,
-    onRemoveImage,
-    onPrune,
-    onDeployContainer,
-    actionLoading = '',
-  } = $props<{
-    images: ImageInfo[];
-    diskUsage: DiskUsageSummary | null;
-    loading: boolean;
-    onRefresh: () => void;
-    onRemoveImage: (id: string, force: boolean) => Promise<void>;
-    onPrune: (danglingOnly: boolean) => Promise<{ imagesDeleted: string[]; spaceReclaimed: number }>;
-    onDeployContainer?: (imageTag: string) => void;
-    actionLoading?: string;
-  }>();
+  import ConfirmModal from '../components/ConfirmModal.svelte';
+  import PullImageModal from '../components/PullImageModal.svelte';
+  import { imagesStore } from '../stores/images.svelte';
+  import { containersStore } from '../stores/containers.svelte';
+  import { uiStore } from '../stores/ui.svelte';
 
   // Search & Filter State
   let searchQuery = $state('');
@@ -68,7 +50,7 @@
 
   // Filter images
   const filteredImages = $derived(
-    images.filter((img) => {
+    imagesStore.images.filter((img) => {
       if (filterState === 'inUse' && !img.inUse) return false;
       if (filterState === 'unused' && img.inUse) return false;
       if (filterState === 'dangling' && !img.isDangling) return false;
@@ -84,37 +66,48 @@
     })
   );
 
-  const danglingImages = $derived(images.filter((img) => img.isDangling));
-  const inUseCount = $derived(images.filter((img) => img.inUse).length);
-  const unusedCount = $derived(images.filter((img) => !img.inUse).length);
+  const danglingImages = $derived(imagesStore.images.filter((img) => img.isDangling));
+  const inUseCount = $derived(imagesStore.images.filter((img) => img.inUse).length);
+  const unusedCount = $derived(imagesStore.images.filter((img) => !img.inUse).length);
 
   async function handleConfirmDelete() {
     if (!imageToDelete) return;
     const target = imageToDelete;
     imageToDelete = null;
-    await onRemoveImage(target.id, false);
+    await imagesStore.removeImage(target.id, false);
   }
 
   async function handleConfirmPrune() {
     isPruning = true;
     try {
-      const result = await onPrune(pruneOnlyDangling);
+      const result = await imagesStore.prune(pruneOnlyDangling);
       isPruneModalOpen = false;
-      pruneSuccessInfo = {
-        count: result.imagesDeleted?.length || 0,
-        bytes: result.spaceReclaimed || 0,
-      };
-      setTimeout(() => {
-        pruneSuccessInfo = null;
-      }, 5000);
+      if (result) {
+        pruneSuccessInfo = {
+          count: result.imagesDeleted?.length || 0,
+          bytes: result.spaceReclaimed || 0,
+        };
+        setTimeout(() => {
+          pruneSuccessInfo = null;
+        }, 5000);
+      }
     } finally {
       isPruning = false;
     }
   }
+
+  function handleDeploy(imageTag: string) {
+    uiStore.openCreateModal(imageTag);
+    uiStore.activeTab = 'containers';
+  }
+
+  function handleRefresh() {
+    imagesStore.fetchImages();
+    containersStore.fetchData(true);
+  }
 </script>
 
 <div class="max-w-7xl w-full mx-auto space-y-5 pb-16">
-
   <!-- Feedback Banner for Prune Success -->
   {#if pruneSuccessInfo}
     <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-200 shadow-sm">
@@ -133,7 +126,7 @@
       </div>
       <button
         onclick={() => (pruneSuccessInfo = null)}
-        class="text-xs font-medium px-3 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+        class="text-xs font-medium px-3 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors cursor-pointer"
       >
         Entendido
       </button>
@@ -152,10 +145,10 @@
       </div>
       <div class="mt-2 flex items-baseline gap-2">
         <span class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-          {formatBytes(diskUsage?.totalSize || 0)}
+          {formatBytes(imagesStore.diskUsage?.totalSize || 0)}
         </span>
         <span class="text-xs text-slate-500 dark:text-slate-400">
-          en {images.length} imágenes
+          en {imagesStore.images.length} imágenes
         </span>
       </div>
       <div class="mt-3 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
@@ -177,7 +170,7 @@
           {danglingImages.length}
         </span>
         <span class="text-xs text-slate-500 dark:text-slate-400">
-          capas sin etiqueta ({formatBytes(diskUsage?.danglingSize || 0)})
+          capas sin etiqueta ({formatBytes(imagesStore.diskUsage?.danglingSize || 0)})
         </span>
       </div>
       <div class="mt-3 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
@@ -194,9 +187,9 @@
             <Sparkles class="w-4 h-4 text-indigo-500" />
             Liberación de Disco
           </span>
-          {#if (diskUsage?.danglingSize || 0) > 0}
+          {#if (imagesStore.diskUsage?.danglingSize || 0) > 0}
             <span class="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-              {formatBytes(diskUsage?.danglingSize || 0)} recuperables
+              {formatBytes(imagesStore.diskUsage?.danglingSize || 0)} recuperables
             </span>
           {/if}
         </div>
@@ -208,7 +201,7 @@
       <div class="mt-3">
         <button
           onclick={() => (isPruneModalOpen = true)}
-          class="w-full py-2 px-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-medium text-xs shadow-sm shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
+          class="w-full py-2 px-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-medium text-xs shadow-sm shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
         >
           <Trash2 class="w-4 h-4" />
           <span>Limpieza Rápida (Prune)</span>
@@ -223,25 +216,25 @@
     <div class="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs overflow-x-auto">
       <button
         onclick={() => (filterState = 'all')}
-        class="px-3 py-1 rounded-lg font-medium transition-colors whitespace-nowrap {filterState === 'all' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
+        class="px-3 py-1 rounded-lg font-medium transition-colors whitespace-nowrap cursor-pointer {filterState === 'all' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
       >
-        Todas ({images.length})
+        Todas ({imagesStore.images.length})
       </button>
       <button
         onclick={() => (filterState = 'inUse')}
-        class="px-3 py-1 rounded-lg font-medium transition-colors whitespace-nowrap {filterState === 'inUse' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
+        class="px-3 py-1 rounded-lg font-medium transition-colors whitespace-nowrap cursor-pointer {filterState === 'inUse' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
       >
         En Uso ({inUseCount})
       </button>
       <button
         onclick={() => (filterState = 'unused')}
-        class="px-3 py-1 rounded-lg font-medium transition-colors whitespace-nowrap {filterState === 'unused' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
+        class="px-3 py-1 rounded-lg font-medium transition-colors whitespace-nowrap cursor-pointer {filterState === 'unused' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
       >
         Sin Usar ({unusedCount})
       </button>
       <button
         onclick={() => (filterState = 'dangling')}
-        class="px-3 py-1 rounded-lg font-medium transition-colors whitespace-nowrap {filterState === 'dangling' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
+        class="px-3 py-1 rounded-lg font-medium transition-colors whitespace-nowrap cursor-pointer {filterState === 'dangling' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
       >
         Huérfanas ({danglingImages.length})
       </button>
@@ -249,7 +242,6 @@
 
     <!-- Right Actions: Search + Download Button -->
     <div class="flex items-center gap-2">
-      <!-- Image Search -->
       <div class="relative flex-1 sm:w-64">
         <Search class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         <input
@@ -260,7 +252,6 @@
         />
       </div>
 
-      <!-- Pull Button -->
       <button
         onclick={() => (isPullModalOpen = true)}
         class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs transition-colors flex items-center gap-1.5 shadow-sm shadow-blue-500/20 whitespace-nowrap cursor-pointer"
@@ -272,16 +263,16 @@
   </div>
 
   <!-- Loading State Skeleton -->
-  {#if loading}
+  {#if imagesStore.loading}
     <div class="space-y-3">
-      {#each [1, 2, 3, 4] as n}
+      {#each [1, 2, 3, 4] as _}
         <div class="h-20 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 animate-pulse"></div>
       {/each}
     </div>
   {/if}
 
   <!-- Empty State -->
-  {#if !loading && filteredImages.length === 0}
+  {#if !imagesStore.loading && filteredImages.length === 0}
     <div class="p-12 text-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 space-y-3">
       <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400">
         <Package class="w-6 h-6" />
@@ -297,7 +288,7 @@
       {#if !searchQuery}
         <button
           onclick={() => (isPullModalOpen = true)}
-          class="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+          class="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 transition-colors cursor-pointer"
         >
           <Download class="w-3.5 h-3.5" />
           <span>Descargar tu primera imagen</span>
@@ -307,14 +298,12 @@
   {/if}
 
   <!-- Images List Cards -->
-  {#if !loading && filteredImages.length > 0}
+  {#if !imagesStore.loading && filteredImages.length > 0}
     <div class="space-y-2.5">
       {#each filteredImages as img (img.id)}
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs hover:shadow transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-700 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          
           <!-- Image Title & Tags -->
           <div class="flex items-start gap-3 min-w-0 flex-1">
-            <!-- Icon Avatar -->
             <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 {img.isDangling ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">
               <Package class="w-4 h-4" />
             </div>
@@ -352,11 +341,10 @@
 
               <!-- Metadata row: ID, Size, Created date -->
               <div class="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap">
-                <!-- Short ID with Copy -->
                 <button
                   onclick={(e) => copyToClipboard(img.id, img.id, e)}
                   title="Copiar ID completo de la imagen"
-                  class="flex items-center gap-1 font-mono text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-1.5 py-0.5 rounded bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-800 transition-colors"
+                  class="flex items-center gap-1 font-mono text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-1.5 py-0.5 rounded bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer"
                 >
                   <span>{img.shortId}</span>
                   {#if copiedId === img.id}
@@ -368,7 +356,6 @@
 
                 <span class="text-slate-300 dark:text-slate-700">•</span>
 
-                <!-- Real Disk Size -->
                 <span class="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1">
                   <HardDrive class="w-3 h-3 text-slate-400" />
                   {formatBytes(img.size)}
@@ -376,7 +363,6 @@
 
                 <span class="text-slate-300 dark:text-slate-700">•</span>
 
-                <!-- Created Date -->
                 <span class="flex items-center gap-1">
                   <Clock class="w-3 h-3 text-slate-400" />
                   {formatRelativeTime(img.created)}
@@ -387,21 +373,17 @@
 
           <!-- Actions -->
           <div class="flex items-center gap-2 self-end md:self-center">
-            <!-- Deploy Container with this Image -->
-            {#if onDeployContainer && !img.isDangling}
+            {#if !img.isDangling}
               {@const imgRef = img.tag && img.tag !== '<none>' ? `${img.repository}:${img.tag}` : img.repository}
               <button
-                onclick={() => onDeployContainer(imgRef)}
+                onclick={() => handleDeploy(imgRef)}
                 title="Crear y levantar un contenedor con esta imagen"
                 class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs transition-all flex items-center gap-1.5 shadow-sm shadow-blue-500/20 cursor-pointer whitespace-nowrap active:scale-[0.98]"
               >
                 <Play class="w-3.5 h-3.5 fill-current" />
                 <span>Desplegar</span>
               </button>
-            {/if}
 
-            <!-- Copy pull command -->
-            {#if !img.isDangling}
               <button
                 onclick={(e) => copyToClipboard(`docker pull ${img.repository}:${img.tag}`, `cmd-${img.id}`, e)}
                 title="Copiar comando 'docker pull'"
@@ -417,31 +399,26 @@
               </button>
             {/if}
 
-            <!-- Delete Image Button -->
             <button
               onclick={() => (imageToDelete = img)}
-              disabled={actionLoading === img.id}
+              disabled={imagesStore.actionLoading === img.id}
               title={img.inUse ? 'Esta imagen está en uso por uno o más contenedores' : 'Eliminar esta imagen del disco'}
-              class="p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-200 dark:hover:border-rose-900 transition-colors disabled:opacity-50"
+              class="p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-200 dark:border-rose-900 transition-colors disabled:opacity-50 cursor-pointer"
             >
               <Trash2 class="w-3.5 h-3.5" />
             </button>
           </div>
-
         </div>
       {/each}
     </div>
   {/if}
-
 </div>
 
 <!-- Pull Image Modal -->
 <PullImageModal
   isOpen={isPullModalOpen}
   onClose={() => (isPullModalOpen = false)}
-  onSuccess={() => {
-    onRefresh();
-  }}
+  onSuccess={() => handleRefresh()}
 />
 
 <!-- Delete Image Confirmation Modal -->
@@ -505,14 +482,14 @@
         <button
           onclick={() => (isPruneModalOpen = false)}
           disabled={isPruning}
-          class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
         >
           Cancelar
         </button>
         <button
           onclick={handleConfirmPrune}
           disabled={isPruning}
-          class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center gap-1.5 shadow-sm shadow-indigo-500/20"
+          class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center gap-1.5 shadow-sm shadow-indigo-500/20 cursor-pointer"
         >
           {#if isPruning}
             <RefreshCw class="w-3.5 h-3.5 animate-spin" />

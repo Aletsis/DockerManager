@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import Header from './components/Header.svelte';
-  import ImagesView from './components/ImagesView.svelte';
   import ContainersView from './views/ContainersView.svelte';
+  import ImagesView from './views/ImagesView.svelte';
   import ModalManager from './components/ModalManager.svelte';
   import { uiStore } from './stores/ui.svelte';
   import { containersStore } from './stores/containers.svelte';
@@ -38,22 +38,7 @@
     {#if uiStore.activeTab === 'containers'}
       <ContainersView />
     {:else}
-      <ImagesView
-        images={imagesStore.images}
-        diskUsage={imagesStore.diskUsage}
-        loading={imagesStore.loading}
-        onRefresh={() => {
-          imagesStore.fetchImages();
-          containersStore.fetchData(true);
-        }}
-        onRemoveImage={(id, force) => imagesStore.removeImage(id, force)}
-        onPrune={(danglingOnly) => imagesStore.prune(danglingOnly)}
-        onDeployContainer={(tag) => {
-          uiStore.openCreateModal(tag);
-          uiStore.activeTab = 'containers';
-        }}
-        actionLoading={imagesStore.actionLoading}
-      />
+      <ImagesView />
     {/if}
   </main>
 

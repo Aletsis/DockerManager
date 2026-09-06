@@ -8,49 +8,16 @@
     RotateCw,
     Loader2,
   } from '@lucide/svelte';
-  import type { DockerNetworkGroup, ContainerStats } from '../types';
+  import type { DockerNetworkGroup } from '../types';
   import ContainerCard from './ContainerCard.svelte';
+  import { containersStore } from '../stores/containers.svelte';
 
-  let {
-    network,
-    statsMap,
-    onStart,
-    onStop,
-    onRestart,
-    onPause,
-    onUnpause,
-    onRemove,
-    onOpenTerminal,
-    onViewLogs,
-    onViewStats,
-    onStartNetwork,
-    onStopNetwork,
-    onRestartNetwork,
-    actionLoading = '',
-  } = $props<{
-    network: DockerNetworkGroup;
-    statsMap: Record<string, ContainerStats>;
-    onStart: (id: string) => void;
-    onStop: (id: string) => void;
-    onRestart: (id: string) => void;
-    onPause: (id: string) => void;
-    onUnpause: (id: string) => void;
-    onRemove: (id: string, name: string) => void;
-    onOpenTerminal: (id: string, name: string) => void;
-    onViewLogs: (id: string, name: string) => void;
-    onViewStats: (id: string, name: string) => void;
-    onStartNetwork: (networkName: string) => void;
-    onStopNetwork: (networkName: string) => void;
-    onRestartNetwork: (networkName: string) => void;
-    actionLoading?: string;
-  }>();
+  let { network } = $props<{ network: DockerNetworkGroup }>();
 
   let isExpanded = $state(true);
 
-  const isNetworkLoading = $derived(actionLoading === `network:${network.name}`);
-  const hasRunning = $derived(network.runningCount > 0);
+  const isNetworkLoading = $derived(containersStore.actionLoading === `network:${network.name}`);
   const allRunning = $derived(network.runningCount === network.totalCount && network.totalCount > 0);
-  const someRunning = $derived(network.runningCount > 0 && network.runningCount < network.totalCount);
   const allStopped = $derived(network.runningCount === 0);
 </script>
 
@@ -80,31 +47,40 @@
           <h2 class="font-bold text-slate-900 dark:text-slate-100 text-sm truncate tracking-tight">
             {network.name}
           </h2>
+
           {#if network.isDefault}
-            <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+            <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
               Red Predeterminada
             </span>
           {:else}
             <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
-              Red Docker
+              Red Personalizada
             </span>
           {/if}
+
           <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
-            ({network.totalCount} {network.totalCount === 1 ? 'contenedor' : 'contenedores'})
+            ({network.totalCount} {network.totalCount === 1 ? 'contenedor conectado' : 'contenedores conectados'})
           </span>
         </div>
+
+        {#if network.networkId}
+          <div class="text-[11px] text-slate-400 dark:text-slate-500 font-mono truncate mt-0.5" title={network.networkId}>
+            ID: {network.networkId.substring(0, 12)}
+          </div>
+        {/if}
       </div>
     </div>
 
-    <!-- Right Section: Status Indicator & Unified Action Buttons -->
-    <div class="flex items-center gap-3 justify-between sm:justify-end flex-wrap pl-7 sm:pl-0">
+    <!-- Right Section: Batch Operations & Running count -->
+    <div class="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0">
       <!-- Status Badge -->
-      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border {allRunning ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60' : someRunning ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60' : 'bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}">
-        <span class="w-2 h-2 rounded-full {allRunning ? 'bg-emerald-500 animate-pulse' : someRunning ? 'bg-amber-500' : 'bg-slate-400'}"></span>
-        <span>{network.runningCount} de {network.totalCount} activos</span>
+      <div class="flex items-center gap-1.5 text-xs">
+        <span class="font-medium text-slate-600 dark:text-slate-300">
+          <span class="font-bold text-emerald-600 dark:text-emerald-400">{network.runningCount}</span>/{network.totalCount} activos
+        </span>
       </div>
 
-      <!-- Unified Network Controls -->
+      <!-- Actions Buttons -->
       <div class="flex items-center gap-1.5">
         {#if isNetworkLoading}
           <div class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-teal-600 dark:text-teal-400 font-medium">
@@ -112,10 +88,10 @@
             <span>Procesando red...</span>
           </div>
         {:else}
-          <!-- Start Network (if some or all stopped) -->
+          <!-- Start Network -->
           <button
-            onclick={() => onStartNetwork(network.name)}
-            disabled={allRunning || !!actionLoading}
+            onclick={() => containersStore.handleStartNetwork(network.name)}
+            disabled={allRunning || !!containersStore.actionLoading}
             title={allRunning ? "Todos los contenedores ya están activos" : "Iniciar todos los contenedores de la red"}
             class="px-2.5 py-1 rounded-lg text-xs font-medium border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
@@ -125,8 +101,8 @@
 
           <!-- Restart Network -->
           <button
-            onclick={() => onRestartNetwork(network.name)}
-            disabled={!!actionLoading}
+            onclick={() => containersStore.handleRestartNetwork(network.name)}
+            disabled={!!containersStore.actionLoading}
             title="Reiniciar todos los contenedores de esta red"
             class="px-2.5 py-1 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
@@ -136,8 +112,8 @@
 
           <!-- Stop Network -->
           <button
-            onclick={() => onStopNetwork(network.name)}
-            disabled={allStopped || !!actionLoading}
+            onclick={() => containersStore.handleStopNetwork(network.name)}
+            disabled={allStopped || !!containersStore.actionLoading}
             title={allStopped ? "Todos los contenedores ya están detenidos" : "Detener todos los contenedores de la red"}
             class="px-2.5 py-1 rounded-lg text-xs font-medium border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
@@ -155,18 +131,7 @@
       {#each network.containers as container (container.id)}
         <ContainerCard
           {container}
-          stats={statsMap[container.id]}
           currentNetworkContext={network.name}
-          {onStart}
-          {onStop}
-          {onRestart}
-          {onPause}
-          {onUnpause}
-          {onRemove}
-          {onOpenTerminal}
-          {onViewLogs}
-          {onViewStats}
-          {actionLoading}
         />
       {/each}
     </div>

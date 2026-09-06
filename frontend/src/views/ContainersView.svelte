@@ -142,23 +142,7 @@
     <div class="space-y-4">
       <!-- Network Groups -->
       {#each networkGroups as network (network.name)}
-        <NetworkGroupCard
-          {network}
-          statsMap={containersStore.statsMap}
-          onStart={(id) => containersStore.handleStart(id)}
-          onStop={(id) => containersStore.handleStop(id)}
-          onRestart={(id) => containersStore.handleRestart(id)}
-          onPause={(id) => containersStore.handlePause(id)}
-          onUnpause={(id) => containersStore.handleUnpause(id)}
-          onRemove={(id, name) => uiStore.openConfirmDelete(id, name)}
-          onOpenTerminal={(id, name) => uiStore.openTerminal(id, name)}
-          onViewLogs={(id, name) => uiStore.openLogs(id, name)}
-          onViewStats={(id, name) => uiStore.openStats(id, name)}
-          onStartNetwork={(name) => containersStore.handleStartNetwork(name)}
-          onStopNetwork={(name) => containersStore.handleStopNetwork(name)}
-          onRestartNetwork={(name) => containersStore.handleRestartNetwork(name)}
-          actionLoading={containersStore.actionLoading}
-        />
+        <NetworkGroupCard {network} />
       {/each}
 
       <!-- Isolated Containers -->
@@ -172,20 +156,7 @@
           </div>
           <div class="space-y-3">
             {#each isolatedContainers as container (container.id)}
-              <ContainerCard
-                {container}
-                stats={containersStore.statsMap[container.id]}
-                onStart={(id) => containersStore.handleStart(id)}
-                onStop={(id) => containersStore.handleStop(id)}
-                onRestart={(id) => containersStore.handleRestart(id)}
-                onPause={(id) => containersStore.handlePause(id)}
-                onUnpause={(id) => containersStore.handleUnpause(id)}
-                onRemove={(id, name) => uiStore.openConfirmDelete(id, name)}
-                onOpenTerminal={(id, name) => uiStore.openTerminal(id, name)}
-                onViewLogs={(id, name) => uiStore.openLogs(id, name)}
-                onViewStats={(id, name) => uiStore.openStats(id, name)}
-                actionLoading={containersStore.actionLoading}
-              />
+              <ContainerCard {container} />
             {/each}
           </div>
         </div>
@@ -195,23 +166,7 @@
     <div class="space-y-4">
       <!-- Stacks Groups -->
       {#each stackGroups as stack (stack.name)}
-        <ComposeStackCard
-          {stack}
-          statsMap={containersStore.statsMap}
-          onStart={(id) => containersStore.handleStart(id)}
-          onStop={(id) => containersStore.handleStop(id)}
-          onRestart={(id) => containersStore.handleRestart(id)}
-          onPause={(id) => containersStore.handlePause(id)}
-          onUnpause={(id) => containersStore.handleUnpause(id)}
-          onRemove={(id, name) => uiStore.openConfirmDelete(id, name)}
-          onOpenTerminal={(id, name) => uiStore.openTerminal(id, name)}
-          onViewLogs={(id, name) => uiStore.openLogs(id, name)}
-          onViewStats={(id, name) => uiStore.openStats(id, name)}
-          onStartStack={(name) => containersStore.handleStartStack(name)}
-          onStopStack={(name) => containersStore.handleStopStack(name)}
-          onRestartStack={(name) => containersStore.handleRestartStack(name)}
-          actionLoading={containersStore.actionLoading}
-        />
+        <ComposeStackCard {stack} />
       {/each}
 
       <!-- Standalone Containers -->
@@ -225,20 +180,7 @@
           </div>
           <div class="space-y-3">
             {#each standaloneContainers as container (container.id)}
-              <ContainerCard
-                {container}
-                stats={containersStore.statsMap[container.id]}
-                onStart={(id) => containersStore.handleStart(id)}
-                onStop={(id) => containersStore.handleStop(id)}
-                onRestart={(id) => containersStore.handleRestart(id)}
-                onPause={(id) => containersStore.handlePause(id)}
-                onUnpause={(id) => containersStore.handleUnpause(id)}
-                onRemove={(id, name) => uiStore.openConfirmDelete(id, name)}
-                onOpenTerminal={(id, name) => uiStore.openTerminal(id, name)}
-                onViewLogs={(id, name) => uiStore.openLogs(id, name)}
-                onViewStats={(id, name) => uiStore.openStats(id, name)}
-                actionLoading={containersStore.actionLoading}
-              />
+              <ContainerCard {container} />
             {/each}
           </div>
         </div>
@@ -248,20 +190,7 @@
     <!-- Flat Containers List -->
     <div class="space-y-3">
       {#each filteredContainers as container (container.id)}
-        <ContainerCard
-          {container}
-          stats={containersStore.statsMap[container.id]}
-          onStart={(id) => containersStore.handleStart(id)}
-          onStop={(id) => containersStore.handleStop(id)}
-          onRestart={(id) => containersStore.handleRestart(id)}
-          onPause={(id) => containersStore.handlePause(id)}
-          onUnpause={(id) => containersStore.handleUnpause(id)}
-          onRemove={(id, name) => uiStore.openConfirmDelete(id, name)}
-          onOpenTerminal={(id, name) => uiStore.openTerminal(id, name)}
-          onViewLogs={(id, name) => uiStore.openLogs(id, name)}
-          onViewStats={(id, name) => uiStore.openStats(id, name)}
-          actionLoading={containersStore.actionLoading}
-        />
+        <ContainerCard {container} />
       {/each}
     </div>
   {/if}

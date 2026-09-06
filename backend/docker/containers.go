@@ -12,7 +12,6 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/docker/go-connections/nat"
 )
 
 // ListContainers returns list of containers with structured metadata
@@ -191,137 +190,21 @@ func (s *Service) GetContainerStats(ctx context.Context, id string) (*ContainerS
 		return nil, fmt.Errorf("failed to decode stats: %w", err)
 	}
 
-	// Calculate CPU Percentage
-	cpuPercent := 0.0
-	cpuDelta := float64(stats.CPUStats.CPUUsage.TotalUsage) - float64(stats.PreCPUStats.CPUUsage.TotalUsage)
-	systemDelta := float64(stats.CPUStats.SystemUsage) - float64(stats.PreCPUStats.SystemUsage)
-	onlineCPUs := float64(stats.CPUStats.OnlineCPUs)
-	if onlineCPUs == 0 {
-		onlineCPUs = float64(len(stats.CPUStats.CPUUsage.PercpuUsage))
-	}
-	if systemDelta > 0.0 && cpuDelta > 0.0 {
-		cpuPercent = (cpuDelta / systemDelta) * onlineCPUs * 100.0
-	}
-
-	// Calculate Memory Usage
-	memUsage := stats.MemoryStats.Usage
-	if cache, ok := stats.MemoryStats.Stats["inactive_file"]; ok {
-		if memUsage > cache {
-			memUsage -= cache
-		}
-	} else if cache, ok := stats.MemoryStats.Stats["cache"]; ok {
-		if memUsage > cache {
-			memUsage -= cache
-		}
-	}
-
-	memLimit := stats.MemoryStats.Limit
-	memPercent := 0.0
-	if memLimit > 0 {
-		memPercent = (float64(memUsage) / float64(memLimit)) * 100.0
-	}
-
-	// Networks
-	var rx, tx uint64
-	for _, net := range stats.Networks {
-		rx += net.RxBytes
-		tx += net.TxBytes
-	}
-
-	// Block I/O
-	var readBytes, writeBytes uint64
-	for _, bio := range stats.BlkioStats.IoServiceBytesRecursive {
-		op := strings.ToLower(bio.Op)
-		if op == "read" {
-			readBytes += bio.Value
-		} else if op == "write" {
-			writeBytes += bio.Value
-		}
-	}
-
-	return &ContainerStats{
-		ID:               stats.ID,
-		Name:             stats.Name,
-		CPUPercentage:    cpuPercent,
-		MemoryUsage:      memUsage,
-		MemoryLimit:      memLimit,
-		MemoryPercentage: memPercent,
-		NetworkRx:        rx,
-		NetworkTx:        tx,
-		BlockRead:        readBytes,
-		BlockWrite:       writeBytes,
-		PIDs:             stats.PidsStats.Current,
-	}, nil
+	return CalculateContainerStats(stats.ID, stats.Name, &stats), nil
 }
 
 // CreateContainer creates and optionally starts a new container based on CreateContainerRequest
 func (s *Service) CreateContainer(ctx context.Context, req CreateContainerRequest) (*CreateContainerResult, error) {
-	req.Image = strings.TrimSpace(req.Image)
-	if req.Image == "" {
-		return nil, fmt.Errorf("el nombre de la imagen es requerido")
+	containerConfig, hostConfig, err := BuildContainerConfig(req)
+	if err != nil {
+		return nil, err
 	}
-	req.Name = strings.TrimSpace(req.Name)
 
 	// Verify if image exists locally; if not, pull it automatically
-	_, _, err := s.cli.ImageInspectWithRaw(ctx, req.Image)
+	_, _, err = s.cli.ImageInspectWithRaw(ctx, req.Image)
 	if err != nil {
 		if pullErr := s.PullImage(ctx, req.Image, nil); pullErr != nil {
 			return nil, fmt.Errorf("la imagen %s no está disponible y falló la descarga: %w", req.Image, pullErr)
-		}
-	}
-
-	// Parse ports if specified
-	var exposedPorts nat.PortSet
-	var portBindings nat.PortMap
-	if len(req.Ports) > 0 {
-		var validPorts []string
-		for _, p := range req.Ports {
-			p = strings.TrimSpace(p)
-			if p != "" {
-				validPorts = append(validPorts, p)
-			}
-		}
-		if len(validPorts) > 0 {
-			var parseErr error
-			exposedPorts, portBindings, parseErr = nat.ParsePortSpecs(validPorts)
-			if parseErr != nil {
-				return nil, fmt.Errorf("error al interpretar especificación de puertos: %w", parseErr)
-			}
-		}
-	}
-
-	// Filter and clean volume binds
-	var cleanVolumes []string
-	for _, v := range req.Volumes {
-		v = strings.TrimSpace(v)
-		if v != "" {
-			cleanVolumes = append(cleanVolumes, v)
-		}
-	}
-
-	// Filter and clean environment variables
-	var cleanEnv []string
-	for _, e := range req.Env {
-		e = strings.TrimSpace(e)
-		if e != "" {
-			cleanEnv = append(cleanEnv, e)
-		}
-	}
-
-	containerConfig := &container.Config{
-		Image:        req.Image,
-		Env:          cleanEnv,
-		ExposedPorts: exposedPorts,
-	}
-
-	hostConfig := &container.HostConfig{
-		PortBindings: portBindings,
-		Binds:        cleanVolumes,
-	}
-
-	if req.RestartPolicy != "" {
-		hostConfig.RestartPolicy = container.RestartPolicy{
-			Name: container.RestartPolicyMode(req.RestartPolicy),
 		}
 	}
 

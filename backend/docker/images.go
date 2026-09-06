@@ -39,22 +39,11 @@ func (s *Service) ListImages(ctx context.Context) ([]ImageInfo, error) {
 			shortID = shortID[:12]
 		}
 
-		isDangling := false
-		repo := "<none>"
-		tag := "<none>"
-
-		if len(img.RepoTags) > 0 && img.RepoTags[0] != "<none>:<none>" {
-			parts := strings.Split(img.RepoTags[0], ":")
-			if len(parts) >= 2 {
-				repo = strings.Join(parts[:len(parts)-1], ":")
-				tag = parts[len(parts)-1]
-			} else {
-				repo = img.RepoTags[0]
-				tag = "latest"
-			}
-		} else {
-			isDangling = true
+		var firstTag string
+		if len(img.RepoTags) > 0 {
+			firstTag = img.RepoTags[0]
 		}
+		repo, tag, isDangling := ParseRepoTag(firstTag)
 
 		inUse := img.Containers > 0 || usedImages[img.ID]
 		if !inUse {
@@ -125,7 +114,11 @@ func (s *Service) GetDiskUsage(ctx context.Context) (*DiskUsageSummary, error) {
 
 	for _, img := range du.Images {
 		totalSize += img.Size
-		isDangling := len(img.RepoTags) == 0 || (len(img.RepoTags) == 1 && img.RepoTags[0] == "<none>:<none>")
+		var firstTag string
+		if len(img.RepoTags) > 0 {
+			firstTag = img.RepoTags[0]
+		}
+		_, _, isDangling := ParseRepoTag(firstTag)
 		if isDangling {
 			danglingCount++
 			danglingSize += img.Size

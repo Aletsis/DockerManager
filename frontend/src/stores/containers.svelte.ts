@@ -5,23 +5,7 @@ import type {
   ComposeStackGroup,
   DockerNetworkGroup,
 } from '../types';
-import {
-  ListContainers,
-  GetOverview,
-  StartContainer,
-  StopContainer,
-  RestartContainer,
-  PauseContainer,
-  UnpauseContainer,
-  RemoveContainer,
-  GetContainerStats,
-  StartStack,
-  StopStack,
-  RestartStack,
-  StartNetwork,
-  StopNetwork,
-  RestartNetwork,
-} from '../../wailsjs/go/main/App';
+import { dockerApi } from '../services/api';
 import { uiStore } from './ui.svelte';
 import { imagesStore } from './images.svelte';
 
@@ -75,12 +59,12 @@ class ContainersStore {
     if (manual) this.isRefreshing = true;
     try {
       const [containerList, hostOverview] = await Promise.all([
-        ListContainers(true),
-        GetOverview(),
+        dockerApi.listContainers(true),
+        dockerApi.getOverview(),
       ]);
 
-      this.containers = (containerList || []) as unknown as ContainerInfo[];
-      this.overview = hostOverview as unknown as SystemOverview;
+      this.containers = containerList;
+      this.overview = hostOverview;
       this.error = null;
 
       // Also refresh images in background if manual
@@ -90,11 +74,11 @@ class ContainersStore {
 
       // Query live stats for running containers
       if (containerList && containerList.length > 0) {
-        const running = containerList.filter((c: any) => c.state === 'running');
-        const statsPromises = running.slice(0, 8).map(async (c: any) => {
+        const running = containerList.filter((c) => c.state === 'running');
+        const statsPromises = running.slice(0, 8).map(async (c) => {
           try {
-            const s = await GetContainerStats(c.id);
-            return { id: c.id, stats: s as unknown as ContainerStats };
+            const s = await dockerApi.getContainerStats(c.id);
+            return { id: c.id, stats: s };
           } catch {
             return null;
           }
@@ -242,7 +226,7 @@ class ContainersStore {
   async handleStart(id: string) {
     this.actionLoading = id;
     try {
-      await StartContainer(id);
+      await dockerApi.startContainer(id);
       uiStore.showToast('Contenedor iniciado exitosamente');
       await this.fetchData();
     } catch (err: any) {
@@ -255,7 +239,7 @@ class ContainersStore {
   async handleStop(id: string) {
     this.actionLoading = id;
     try {
-      await StopContainer(id);
+      await dockerApi.stopContainer(id);
       uiStore.showToast('Contenedor detenido');
       await this.fetchData();
     } catch (err: any) {
@@ -268,7 +252,7 @@ class ContainersStore {
   async handleRestart(id: string) {
     this.actionLoading = id;
     try {
-      await RestartContainer(id);
+      await dockerApi.restartContainer(id);
       uiStore.showToast('Contenedor reiniciado');
       await this.fetchData();
     } catch (err: any) {
@@ -281,7 +265,7 @@ class ContainersStore {
   async handlePause(id: string) {
     this.actionLoading = id;
     try {
-      await PauseContainer(id);
+      await dockerApi.pauseContainer(id);
       uiStore.showToast('Contenedor pausado');
       await this.fetchData();
     } catch (err: any) {
@@ -294,7 +278,7 @@ class ContainersStore {
   async handleUnpause(id: string) {
     this.actionLoading = id;
     try {
-      await UnpauseContainer(id);
+      await dockerApi.unpauseContainer(id);
       uiStore.showToast('Contenedor reanudado');
       await this.fetchData();
     } catch (err: any) {
@@ -307,7 +291,7 @@ class ContainersStore {
   async handleRemove(id: string) {
     this.actionLoading = id;
     try {
-      await RemoveContainer(id, true);
+      await dockerApi.removeContainer(id, true);
       uiStore.showToast('Contenedor eliminado');
       await this.fetchData();
     } catch (err: any) {
@@ -321,7 +305,7 @@ class ContainersStore {
   async handleStartStack(projectName: string) {
     this.actionLoading = `stack:${projectName}`;
     try {
-      await StartStack(projectName);
+      await dockerApi.startStack(projectName);
       uiStore.showToast(`Stack "${projectName}" iniciado exitosamente`);
       await this.fetchData();
     } catch (err: any) {
@@ -334,7 +318,7 @@ class ContainersStore {
   async handleStopStack(projectName: string) {
     this.actionLoading = `stack:${projectName}`;
     try {
-      await StopStack(projectName);
+      await dockerApi.stopStack(projectName);
       uiStore.showToast(`Stack "${projectName}" detenido`);
       await this.fetchData();
     } catch (err: any) {
@@ -347,7 +331,7 @@ class ContainersStore {
   async handleRestartStack(projectName: string) {
     this.actionLoading = `stack:${projectName}`;
     try {
-      await RestartStack(projectName);
+      await dockerApi.restartStack(projectName);
       uiStore.showToast(`Stack "${projectName}" reiniciado`);
       await this.fetchData();
     } catch (err: any) {
@@ -361,7 +345,7 @@ class ContainersStore {
   async handleStartNetwork(networkName: string) {
     this.actionLoading = `network:${networkName}`;
     try {
-      await StartNetwork(networkName);
+      await dockerApi.startNetwork(networkName);
       uiStore.showToast(`Red "${networkName}" iniciada exitosamente`);
       await this.fetchData();
     } catch (err: any) {
@@ -374,7 +358,7 @@ class ContainersStore {
   async handleStopNetwork(networkName: string) {
     this.actionLoading = `network:${networkName}`;
     try {
-      await StopNetwork(networkName);
+      await dockerApi.stopNetwork(networkName);
       uiStore.showToast(`Red "${networkName}" detenida`);
       await this.fetchData();
     } catch (err: any) {
@@ -387,7 +371,7 @@ class ContainersStore {
   async handleRestartNetwork(networkName: string) {
     this.actionLoading = `network:${networkName}`;
     try {
-      await RestartNetwork(networkName);
+      await dockerApi.restartNetwork(networkName);
       uiStore.showToast(`Red "${networkName}" reiniciada`);
       await this.fetchData();
     } catch (err: any) {
