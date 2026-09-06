@@ -11,6 +11,9 @@ import type {
   VolumeInfo,
   VolumeDiskUsageSummary,
   VolumePruneResult,
+  NetworkInfo,
+  CreateNetworkRequest,
+  NetworkPruneResult,
 } from '../../types';
 
 /**
@@ -60,6 +63,27 @@ export const dockerApi = {
   startNetwork: (name: string): Promise<void> => WailsApp.StartNetwork(name),
   stopNetwork: (name: string): Promise<void> => WailsApp.StopNetwork(name),
   restartNetwork: (name: string): Promise<void> => WailsApp.RestartNetwork(name),
+  listNetworks: async (): Promise<NetworkInfo[]> => {
+    const res = await WailsApp.ListNetworks();
+    return (res || []) as unknown as NetworkInfo[];
+  },
+  createNetwork: async (req: CreateNetworkRequest): Promise<string> => {
+    return WailsApp.CreateNetwork(req as any);
+  },
+  removeNetwork: (id: string): Promise<void> => WailsApp.RemoveNetwork(id),
+  pruneNetworks: async (): Promise<NetworkPruneResult> => {
+    const res = await WailsApp.PruneNetworks();
+    return res as unknown as NetworkPruneResult;
+  },
+  connectContainerToNetwork: (networkId: string, containerId: string, ipAddress = ''): Promise<void> => {
+    return WailsApp.ConnectContainerToNetwork(networkId, containerId, ipAddress);
+  },
+  disconnectContainerFromNetwork: (networkId: string, containerId: string, force = false): Promise<void> => {
+    return WailsApp.DisconnectContainerFromNetwork(networkId, containerId, force);
+  },
+  inspectNetwork: async (id: string): Promise<string> => {
+    return WailsApp.InspectNetwork(id);
+  },
 
   // Images
   listImages: async (): Promise<ImageInfo[]> => {

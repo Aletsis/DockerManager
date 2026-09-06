@@ -15,6 +15,7 @@ import (
 
 	containerdomain "dockermanager/internal/domain/container"
 	imagedomain "dockermanager/internal/domain/image"
+	networkdomain "dockermanager/internal/domain/network"
 	systemdomain "dockermanager/internal/domain/system"
 	terminaldomain "dockermanager/internal/domain/terminal"
 	volumedomain "dockermanager/internal/domain/volume"
@@ -41,8 +42,10 @@ type App struct {
 	createUC         *containerapp.CreateContainerUseCase
 	telemetryUC      *containerapp.GetTelemetryUseCase
 
-	stackUC   *stackapp.ManageStackUseCase
-	networkUC *networkapp.ManageNetworkUseCase
+	stackUC         *stackapp.ManageStackUseCase
+	networkUC       *networkapp.ManageNetworkUseCase
+	listNetworksUC  *networkapp.ListNetworksUseCase
+	createNetworkUC *networkapp.CreateNetworkUseCase
 
 	listImagesUC  *imageapp.ListImagesUseCase
 	diskUsageUC   *imageapp.GetDiskUsageUseCase
@@ -119,6 +122,8 @@ func (a *App) ensureInitialized() error {
 
 	a.stackUC = stackapp.NewManageStackUseCase(stackRepo)
 	a.networkUC = networkapp.NewManageNetworkUseCase(networkRepo)
+	a.listNetworksUC = networkapp.NewListNetworksUseCase(networkRepo)
+	a.createNetworkUC = networkapp.NewCreateNetworkUseCase(networkRepo)
 
 	a.listImagesUC = imageapp.NewListImagesUseCase(imageRepo)
 	a.diskUsageUC = imageapp.NewGetDiskUsageUseCase(imageRepo)
@@ -253,6 +258,62 @@ func (a *App) RestartNetwork(networkName string) error {
 		return err
 	}
 	return a.networkUC.RestartNetwork(a.ctx, networkName)
+}
+
+// ListNetworks returns list of all docker networks
+func (a *App) ListNetworks() ([]networkdomain.Network, error) {
+	if err := a.ensureInitialized(); err != nil {
+		return nil, err
+	}
+	return a.listNetworksUC.Execute(a.ctx)
+}
+
+// CreateNetwork creates a new docker network
+func (a *App) CreateNetwork(spec networkdomain.CreateNetworkSpec) (string, error) {
+	if err := a.ensureInitialized(); err != nil {
+		return "", err
+	}
+	return a.createNetworkUC.Execute(a.ctx, spec)
+}
+
+// RemoveNetwork removes a docker network by id or name
+func (a *App) RemoveNetwork(idOrName string) error {
+	if err := a.ensureInitialized(); err != nil {
+		return err
+	}
+	return a.networkUC.Remove(a.ctx, idOrName)
+}
+
+// PruneNetworks cleans inactive/unused networks
+func (a *App) PruneNetworks() (*networkdomain.PruneResult, error) {
+	if err := a.ensureInitialized(); err != nil {
+		return nil, err
+	}
+	return a.networkUC.Prune(a.ctx)
+}
+
+// ConnectContainerToNetwork attaches a container to a network
+func (a *App) ConnectContainerToNetwork(networkID string, containerID string, ipAddress string) error {
+	if err := a.ensureInitialized(); err != nil {
+		return err
+	}
+	return a.networkUC.Connect(a.ctx, networkID, containerID, ipAddress)
+}
+
+// DisconnectContainerFromNetwork detaches a container from a network
+func (a *App) DisconnectContainerFromNetwork(networkID string, containerID string, force bool) error {
+	if err := a.ensureInitialized(); err != nil {
+		return err
+	}
+	return a.networkUC.Disconnect(a.ctx, networkID, containerID, force)
+}
+
+// InspectNetwork returns raw formatted JSON configuration of a network
+func (a *App) InspectNetwork(idOrName string) (string, error) {
+	if err := a.ensureInitialized(); err != nil {
+		return "", err
+	}
+	return a.networkUC.Inspect(a.ctx, idOrName)
 }
 
 // GetContainerLogs returns logs for a container

@@ -12,6 +12,7 @@
     ChevronDown,
     HardDrive,
     Database,
+    Network,
   } from '@lucide/svelte';
   import type { SystemOverview, DiskUsageSummary, VolumeDiskUsageSummary } from '../../../types';
   import { APP_VERSION } from '../../../shared/version';
@@ -21,7 +22,9 @@
     diskUsage = null,
     volumeDiskUsage = null,
     volumesCount = 0,
-    activeTab = $bindable<'containers' | 'images' | 'volumes'>('containers'),
+    networksCount = 0,
+    inactiveNetworksCount = 0,
+    activeTab = $bindable<'containers' | 'images' | 'volumes' | 'networks'>('containers'),
     searchQuery = $bindable(''),
     isDark,
     onToggleTheme,
@@ -33,7 +36,9 @@
     diskUsage?: DiskUsageSummary | null;
     volumeDiskUsage?: VolumeDiskUsageSummary | null;
     volumesCount?: number;
-    activeTab: 'containers' | 'images' | 'volumes';
+    networksCount?: number;
+    inactiveNetworksCount?: number;
+    activeTab: 'containers' | 'images' | 'volumes' | 'networks';
     searchQuery: string;
     isDark: boolean;
     onToggleTheme: () => void;
@@ -112,6 +117,22 @@
         <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" title="{volumeDiskUsage.danglingCount} volúmenes huérfanos"></span>
       {/if}
     </button>
+
+    <button
+      onclick={() => (activeTab = 'networks')}
+      class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer {activeTab === 'networks' ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
+    >
+      <Network class="w-3.5 h-3.5 shrink-0" />
+      <span>Redes</span>
+      {#if networksCount !== undefined && networksCount > 0}
+        <span class="text-[10px] font-mono px-1.5 py-0.2 rounded-full {activeTab === 'networks' ? 'bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'}">
+          {networksCount}
+        </span>
+      {/if}
+      {#if inactiveNetworksCount !== undefined && inactiveNetworksCount > 0}
+        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" title="{inactiveNetworksCount} redes inactivas"></span>
+      {/if}
+    </button>
   </nav>
 {/snippet}
 
@@ -141,6 +162,12 @@
         <div class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 font-medium whitespace-nowrap shrink-0">
           <Database class="w-3.5 h-3.5 shrink-0" />
           <span>{volumesCount} <span class="hidden sm:inline">Volúmenes</span></span>
+        </div>
+      {/if}
+      {#if networksCount > 0}
+        <div class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 font-medium whitespace-nowrap shrink-0">
+          <Network class="w-3.5 h-3.5 shrink-0" />
+          <span>{networksCount} <span class="hidden sm:inline">Redes</span></span>
         </div>
       {/if}
     </div>

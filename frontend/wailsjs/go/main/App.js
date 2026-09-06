@@ -6,8 +6,20 @@ export function CloseTerminal(arg1) {
   return window['go']['main']['App']['CloseTerminal'](arg1);
 }
 
+export function ConnectContainerToNetwork(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ConnectContainerToNetwork'](arg1, arg2, arg3);
+}
+
 export function CreateContainer(arg1) {
   return window['go']['main']['App']['CreateContainer'](arg1);
+}
+
+export function CreateNetwork(arg1) {
+  return window['go']['main']['App']['CreateNetwork'](arg1);
+}
+
+export function DisconnectContainerFromNetwork(arg1, arg2, arg3) {
+  return window['go']['main']['App']['DisconnectContainerFromNetwork'](arg1, arg2, arg3);
 }
 
 export function GetAppVersion() {
@@ -38,6 +50,10 @@ export function InspectContainer(arg1) {
   return window['go']['main']['App']['InspectContainer'](arg1);
 }
 
+export function InspectNetwork(arg1) {
+  return window['go']['main']['App']['InspectNetwork'](arg1);
+}
+
 export function InspectVolume(arg1) {
   return window['go']['main']['App']['InspectVolume'](arg1);
 }
@@ -48,6 +64,10 @@ export function ListContainers(arg1) {
 
 export function ListImages() {
   return window['go']['main']['App']['ListImages']();
+}
+
+export function ListNetworks() {
+  return window['go']['main']['App']['ListNetworks']();
 }
 
 export function ListVolumes() {
@@ -66,6 +86,10 @@ export function PruneImages(arg1) {
   return window['go']['main']['App']['PruneImages'](arg1);
 }
 
+export function PruneNetworks() {
+  return window['go']['main']['App']['PruneNetworks']();
+}
+
 export function PruneVolumes() {
   return window['go']['main']['App']['PruneVolumes']();
 }
@@ -80,6 +104,10 @@ export function RemoveContainer(arg1, arg2) {
 
 export function RemoveImage(arg1, arg2) {
   return window['go']['main']['App']['RemoveImage'](arg1, arg2);
+}
+
+export function RemoveNetwork(arg1) {
+  return window['go']['main']['App']['RemoveNetwork'](arg1);
 }
 
 export function RemoveVolume(arg1, arg2) {

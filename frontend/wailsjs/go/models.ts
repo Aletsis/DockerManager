@@ -254,6 +254,154 @@ export namespace image {
 
 }
 
+export namespace network {
+	
+	export class CreateNetworkSpec {
+	    name: string;
+	    driver: string;
+	    subnet?: string;
+	    gateway?: string;
+	    ipRange?: string;
+	    internal: boolean;
+	    attachable: boolean;
+	    enableIPv6: boolean;
+	    labels?: Record<string, string>;
+	    options?: Record<string, string>;
+	
+	    static createFrom(source: any = {}) {
+	        return new CreateNetworkSpec(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.driver = source["driver"];
+	        this.subnet = source["subnet"];
+	        this.gateway = source["gateway"];
+	        this.ipRange = source["ipRange"];
+	        this.internal = source["internal"];
+	        this.attachable = source["attachable"];
+	        this.enableIPv6 = source["enableIPv6"];
+	        this.labels = source["labels"];
+	        this.options = source["options"];
+	    }
+	}
+	export class IPAMConfig {
+	    driver?: string;
+	    subnet?: string;
+	    gateway?: string;
+	    ipRange?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new IPAMConfig(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.driver = source["driver"];
+	        this.subnet = source["subnet"];
+	        this.gateway = source["gateway"];
+	        this.ipRange = source["ipRange"];
+	    }
+	}
+	export class NetworkContainerRef {
+	    id: string;
+	    name: string;
+	    state?: string;
+	    ipv4Address: string;
+	    ipv6Address: string;
+	    macAddress: string;
+	    endpointId: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NetworkContainerRef(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.state = source["state"];
+	        this.ipv4Address = source["ipv4Address"];
+	        this.ipv6Address = source["ipv6Address"];
+	        this.macAddress = source["macAddress"];
+	        this.endpointId = source["endpointId"];
+	    }
+	}
+	export class Network {
+	    id: string;
+	    shortId: string;
+	    name: string;
+	    driver: string;
+	    scope: string;
+	    internal: boolean;
+	    attachable: boolean;
+	    enableIPv6: boolean;
+	    ipam: IPAMConfig[];
+	    containers: NetworkContainerRef[];
+	    containersCount: number;
+	    labels: Record<string, string>;
+	    options: Record<string, string>;
+	    created: string;
+	    isDefault: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new Network(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.shortId = source["shortId"];
+	        this.name = source["name"];
+	        this.driver = source["driver"];
+	        this.scope = source["scope"];
+	        this.internal = source["internal"];
+	        this.attachable = source["attachable"];
+	        this.enableIPv6 = source["enableIPv6"];
+	        this.ipam = this.convertValues(source["ipam"], IPAMConfig);
+	        this.containers = this.convertValues(source["containers"], NetworkContainerRef);
+	        this.containersCount = source["containersCount"];
+	        this.labels = source["labels"];
+	        this.options = source["options"];
+	        this.created = source["created"];
+	        this.isDefault = source["isDefault"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class PruneResult {
+	    networksDeleted: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new PruneResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.networksDeleted = source["networksDeleted"];
+	    }
+	}
+
+}
+
 export namespace system {
 	
 	export class Overview {

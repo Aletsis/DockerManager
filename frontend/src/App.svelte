@@ -4,17 +4,20 @@
   import ContainersView from './views/ContainersView.svelte';
   import ImagesView from './features/images/views/ImagesView.svelte';
   import VolumesView from './features/volumes/views/VolumesView.svelte';
+  import NetworksView from './features/networks/views/NetworksView.svelte';
   import ModalManager from './shared/components/ModalManager.svelte';
   import { uiStore } from './shared/stores/ui.svelte';
   import { containersStore } from './features/containers/stores/containers.svelte';
   import { imagesStore } from './features/images/stores/images.svelte';
   import { volumesStore } from './features/volumes/stores/volumes.svelte';
+  import { networksStore } from './features/networks/stores/networks.svelte';
 
   onMount(() => {
     containersStore.fetchData();
     containersStore.setupPolling();
     imagesStore.fetchImages();
     volumesStore.fetchVolumes();
+    networksStore.fetchNetworks();
   });
 
   onDestroy(() => {
@@ -25,6 +28,7 @@
     containersStore.fetchData(true);
     imagesStore.fetchImages();
     volumesStore.fetchVolumes();
+    networksStore.fetchNetworks();
   }
 </script>
 
@@ -35,6 +39,8 @@
     diskUsage={imagesStore.diskUsage}
     volumeDiskUsage={volumesStore.diskUsage}
     volumesCount={volumesStore.volumes.length}
+    networksCount={networksStore.networks.length}
+    inactiveNetworksCount={networksStore.networks.filter(n => !n.isDefault && n.containersCount === 0).length}
     bind:activeTab={uiStore.activeTab}
     bind:searchQuery={uiStore.searchQuery}
     isDark={uiStore.isDark}
@@ -52,6 +58,8 @@
       <ImagesView />
     {:else if uiStore.activeTab === 'volumes'}
       <VolumesView />
+    {:else if uiStore.activeTab === 'networks'}
+      <NetworksView />
     {/if}
   </main>
 

@@ -17,4 +17,6 @@ var (
 	ErrSessionNotFound         = errors.New("terminal session not found")
 	ErrVolumeNotFound          = errors.New("volume not found")
 	ErrVolumeInUse             = errors.New("volume is in use by a container")
+	ErrCannotRemoveDefaultNetwork = errors.New("cannot remove default docker network")
+	ErrNetworkInUse            = errors.New("network has active containers attached")
 )

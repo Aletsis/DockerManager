@@ -6,9 +6,13 @@
   import VolumeInspectModal from '../../features/volumes/modals/VolumeInspectModal.svelte';
   import ConfirmModal from './ConfirmModal.svelte';
   import CreateContainerModal from '../../features/containers/modals/CreateContainerModal.svelte';
+  import CreateNetworkModal from '../../features/networks/modals/CreateNetworkModal.svelte';
+  import ConnectContainerModal from '../../features/networks/modals/ConnectContainerModal.svelte';
+  import NetworkInspectModal from '../../features/networks/modals/NetworkInspectModal.svelte';
   import { uiStore } from '../stores/ui.svelte';
   import { containersStore } from '../../features/containers/stores/containers.svelte';
   import { imagesStore } from '../../features/images/stores/images.svelte';
+  import { networksStore } from '../../features/networks/stores/networks.svelte';
 
   async function handleConfirmDelete() {
     if (!uiStore.confirmDelete) return;
@@ -65,6 +69,30 @@
   volumeName={uiStore.activeVolumeInspect?.name || null}
   onClose={() => uiStore.closeVolumeInspect()}
 />
+
+<!-- Create Network Modal -->
+<CreateNetworkModal
+  isOpen={uiStore.isCreateNetworkModalOpen}
+  onClose={() => uiStore.closeCreateNetworkModal()}
+/>
+
+<!-- Network Inspect Modal -->
+<NetworkInspectModal
+  networkId={uiStore.activeNetworkInspect?.id || null}
+  networkName={uiStore.activeNetworkInspect?.name || ''}
+  onClose={() => uiStore.closeNetworkInspect()}
+/>
+
+<!-- Connect Container to Network Modal -->
+{#if uiStore.activeConnectContainer}
+  {@const targetNet = networksStore.networks.find(n => n.id === uiStore.activeConnectContainer?.networkId)}
+  <ConnectContainerModal
+    networkId={uiStore.activeConnectContainer.networkId}
+    networkName={uiStore.activeConnectContainer.networkName}
+    connectedContainerIds={targetNet?.containers.map(c => c.id) || []}
+    onClose={() => uiStore.closeConnectContainer()}
+  />
+{/if}
 
 <!-- Confirm Delete Container Modal -->
 <ConfirmModal

@@ -1,4 +1,4 @@
-export type TabType = 'containers' | 'images' | 'volumes';
+export type TabType = 'containers' | 'images' | 'volumes' | 'networks';
 
 export interface ToastNotification {
   text: string;
@@ -22,6 +22,9 @@ class UiStore {
   activeStats = $state<{ id: string; name: string } | null>(null);
   activeInspect = $state<{ id: string; name: string } | null>(null);
   activeVolumeInspect = $state<{ name: string } | null>(null);
+  activeNetworkInspect = $state<{ id: string; name: string } | null>(null);
+  activeConnectContainer = $state<{ networkId: string; networkName: string } | null>(null);
+  isCreateNetworkModalOpen = $state<boolean>(false);
   confirmDelete = $state<{ id: string; name: string } | null>(null);
   isCreateModalOpen = $state<boolean>(false);
   createModalInitialImage = $state<string>('');
@@ -100,6 +103,30 @@ class UiStore {
 
   closeVolumeInspect() {
     this.activeVolumeInspect = null;
+  }
+
+  openNetworkInspect(id: string, name: string) {
+    this.activeNetworkInspect = { id, name };
+  }
+
+  closeNetworkInspect() {
+    this.activeNetworkInspect = null;
+  }
+
+  openConnectContainer(networkId: string, networkName: string) {
+    this.activeConnectContainer = { networkId, networkName };
+  }
+
+  closeConnectContainer() {
+    this.activeConnectContainer = null;
+  }
+
+  openCreateNetworkModal() {
+    this.isCreateNetworkModalOpen = true;
+  }
+
+  closeCreateNetworkModal() {
+    this.isCreateNetworkModalOpen = false;
   }
 
   openConfirmDelete(id: string, name: string) {
