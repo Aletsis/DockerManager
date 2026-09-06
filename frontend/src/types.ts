@@ -83,3 +83,18 @@ export interface PullProgressEvent {
   error?: string;
 }
 
+export interface CreateContainerRequest {
+  image: string;
+  name?: string;
+  ports?: string[];
+  volumes?: string[];
+  env?: string[];
+  restartPolicy?: string;
+  autoStart?: boolean;
+}
+
+export interface CreateContainerResult {
+  id: string;
+  warnings?: string[];
+}
+

@@ -7,6 +7,7 @@
   import ConfirmModal from './components/ConfirmModal.svelte';
   import TerminalModal from './components/TerminalModal.svelte';
   import ImagesView from './components/ImagesView.svelte';
+  import CreateContainerModal from './components/CreateContainerModal.svelte';
   import type {
     ContainerInfo,
     SystemOverview,
@@ -29,7 +30,7 @@
     RemoveImage,
     PruneImages,
   } from '../wailsjs/go/main/App';
-  import { AlertCircle, Box } from '@lucide/svelte';
+  import { AlertCircle, Box, Plus } from '@lucide/svelte';
 
   // Theme State
   let isDark = $state<boolean>(() => {
@@ -63,6 +64,8 @@
   let activeLogs = $state<{ id: string; name: string } | null>(null);
   let activeStats = $state<{ id: string; name: string } | null>(null);
   let confirmDelete = $state<{ id: string; name: string } | null>(null);
+  let isCreateModalOpen = $state<boolean>(false);
+  let createModalInitialImage = $state<string>('');
   let actionLoading = $state<string>('');
   let notification = $state<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -326,8 +329,20 @@
           </button>
         </div>
 
-        <div class="text-xs text-slate-500 dark:text-slate-400 font-mono">
-          {filteredContainers.length} de {containers.length} contenedores
+        <div class="flex items-center gap-3">
+          <div class="text-xs text-slate-500 dark:text-slate-400 font-mono">
+            {filteredContainers.length} de {containers.length} contenedores
+          </div>
+          <button
+            onclick={() => {
+              createModalInitialImage = '';
+              isCreateModalOpen = true;
+            }}
+            class="px-3 py-1.5 rounded-xl text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors flex items-center gap-1.5 shadow-sm shadow-blue-500/20 cursor-pointer"
+          >
+            <Plus class="w-3.5 h-3.5" />
+            <span>Nuevo Contenedor</span>
+          </button>
         </div>
       </div>
 
@@ -369,6 +384,20 @@
               ? 'Ningún contenedor coincide con el filtro de búsqueda actual.'
               : 'No hay contenedores registrados en el daemon de Docker.'}
           </p>
+          {#if !searchQuery}
+            <div class="pt-2">
+              <button
+                onclick={() => {
+                  createModalInitialImage = '';
+                  isCreateModalOpen = true;
+                }}
+                class="px-4 py-2 rounded-xl text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5 shadow-sm shadow-blue-500/20 cursor-pointer"
+              >
+                <Plus class="w-3.5 h-3.5" />
+                <span>Crear Primer Contenedor</span>
+              </button>
+            </div>
+          {/if}
         </div>
       {/if}
 
@@ -400,6 +429,11 @@
         onRefresh={() => fetchData(true)}
         onRemoveImage={handleRemoveImage}
         onPrune={handlePrune}
+        onDeployContainer={(tag) => {
+          createModalInitialImage = tag;
+          isCreateModalOpen = true;
+          activeTab = 'containers';
+        }}
         {actionLoading}
       />
     {/if}
@@ -416,6 +450,20 @@
   {/if}
 
   <!-- Modals -->
+  <CreateContainerModal
+    isOpen={isCreateModalOpen}
+    initialImage={createModalInitialImage}
+    localImages={images}
+    onClose={() => {
+      isCreateModalOpen = false;
+      createModalInitialImage = '';
+    }}
+    onSuccess={() => {
+      showToast('Contenedor creado e iniciado exitosamente');
+      fetchData(true);
+    }}
+  />
+
   {#if activeTerminal}
     <TerminalModal
       containerId={activeTerminal.id}

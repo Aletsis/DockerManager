@@ -6,6 +6,10 @@ export function CloseTerminal(arg1) {
   return window['go']['main']['App']['CloseTerminal'](arg1);
 }
 
+export function CreateContainer(arg1) {
+  return window['go']['main']['App']['CreateContainer'](arg1);
+}
+
 export function GetContainerLogs(arg1, arg2) {
   return window['go']['main']['App']['GetContainerLogs'](arg1, arg2);
 }

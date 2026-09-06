@@ -104,6 +104,44 @@ export namespace docker {
 	        this.pids = source["pids"];
 	    }
 	}
+	export class CreateContainerRequest {
+	    image: string;
+	    name: string;
+	    ports: string[];
+	    volumes: string[];
+	    env: string[];
+	    restartPolicy: string;
+	    autoStart: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new CreateContainerRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.image = source["image"];
+	        this.name = source["name"];
+	        this.ports = source["ports"];
+	        this.volumes = source["volumes"];
+	        this.env = source["env"];
+	        this.restartPolicy = source["restartPolicy"];
+	        this.autoStart = source["autoStart"];
+	    }
+	}
+	export class CreateContainerResult {
+	    id: string;
+	    warnings: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new CreateContainerResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.warnings = source["warnings"];
+	    }
+	}
 	export class DiskUsageSummary {
 	    totalImages: number;
 	    totalSize: number;

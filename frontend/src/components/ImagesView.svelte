@@ -15,6 +15,7 @@
     ShieldCheck,
     CheckCircle2,
     Info,
+    Play,
   } from '@lucide/svelte';
   import type { ImageInfo, DiskUsageSummary } from '../types';
   import { formatBytes, formatRelativeTime } from '../utils';
@@ -28,6 +29,7 @@
     onRefresh,
     onRemoveImage,
     onPrune,
+    onDeployContainer,
     actionLoading = '',
   } = $props<{
     images: ImageInfo[];
@@ -36,6 +38,7 @@
     onRefresh: () => void;
     onRemoveImage: (id: string, force: boolean) => Promise<void>;
     onPrune: (danglingOnly: boolean) => Promise<{ imagesDeleted: string[]; spaceReclaimed: number }>;
+    onDeployContainer?: (imageTag: string) => void;
     actionLoading?: string;
   }>();
 
@@ -260,7 +263,7 @@
       <!-- Pull Button -->
       <button
         onclick={() => (isPullModalOpen = true)}
-        class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs transition-colors flex items-center gap-1.5 shadow-sm shadow-blue-500/20 whitespace-nowrap"
+        class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs transition-colors flex items-center gap-1.5 shadow-sm shadow-blue-500/20 whitespace-nowrap cursor-pointer"
       >
         <Download class="w-3.5 h-3.5" />
         <span>Descargar Imagen</span>
@@ -384,12 +387,25 @@
 
           <!-- Actions -->
           <div class="flex items-center gap-2 self-end md:self-center">
+            <!-- Deploy Container with this Image -->
+            {#if onDeployContainer && !img.isDangling}
+              {@const imgRef = img.tag && img.tag !== '<none>' ? `${img.repository}:${img.tag}` : img.repository}
+              <button
+                onclick={() => onDeployContainer(imgRef)}
+                title="Crear y levantar un contenedor con esta imagen"
+                class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs transition-all flex items-center gap-1.5 shadow-sm shadow-blue-500/20 cursor-pointer whitespace-nowrap active:scale-[0.98]"
+              >
+                <Play class="w-3.5 h-3.5 fill-current" />
+                <span>Desplegar</span>
+              </button>
+            {/if}
+
             <!-- Copy pull command -->
             {#if !img.isDangling}
               <button
                 onclick={(e) => copyToClipboard(`docker pull ${img.repository}:${img.tag}`, `cmd-${img.id}`, e)}
                 title="Copiar comando 'docker pull'"
-                class="p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors text-xs flex items-center gap-1"
+                class="p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors text-xs flex items-center gap-1 cursor-pointer"
               >
                 {#if copiedId === `cmd-${img.id}`}
                   <Check class="w-3.5 h-3.5 text-emerald-500" />

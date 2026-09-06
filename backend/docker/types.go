@@ -93,3 +93,20 @@ type PullProgressEvent struct {
 	Error    string `json:"error,omitempty"`
 }
 
+// CreateContainerRequest defines the parameters to create and start a new container
+type CreateContainerRequest struct {
+	Image         string   `json:"image"`
+	Name          string   `json:"name"`
+	Ports         []string `json:"ports"`
+	Volumes       []string `json:"volumes"`
+	Env           []string `json:"env"`
+	RestartPolicy string   `json:"restartPolicy"`
+	AutoStart     bool     `json:"autoStart"`
+}
+
+// CreateContainerResult contains details of a newly created container
+type CreateContainerResult struct {
+	ID       string   `json:"id"`
+	Warnings []string `json:"warnings"`
+}
+

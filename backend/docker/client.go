@@ -17,6 +17,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/docker/go-connections/nat"
 )
 
 // Service encapsulates Docker client operations
@@ -552,6 +553,104 @@ func (s *Service) PruneImages(ctx context.Context, danglingOnly bool) (*PruneRes
 	return &PruneResult{
 		ImagesDeleted:  deletedIDs,
 		SpaceReclaimed: report.SpaceReclaimed,
+	}, nil
+}
+
+// CreateContainer creates and optionally starts a new container based on CreateContainerRequest
+func (s *Service) CreateContainer(ctx context.Context, req CreateContainerRequest) (*CreateContainerResult, error) {
+	req.Image = strings.TrimSpace(req.Image)
+	if req.Image == "" {
+		return nil, fmt.Errorf("el nombre de la imagen es requerido")
+	}
+	req.Name = strings.TrimSpace(req.Name)
+
+	// Verify if image exists locally; if not, pull it automatically
+	_, _, err := s.cli.ImageInspectWithRaw(ctx, req.Image)
+	if err != nil {
+		if pullErr := s.PullImage(ctx, req.Image, nil); pullErr != nil {
+			return nil, fmt.Errorf("la imagen %s no está disponible y falló la descarga: %w", req.Image, pullErr)
+		}
+	}
+
+	// Parse ports if specified
+	var exposedPorts nat.PortSet
+	var portBindings nat.PortMap
+	if len(req.Ports) > 0 {
+		var validPorts []string
+		for _, p := range req.Ports {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				validPorts = append(validPorts, p)
+			}
+		}
+		if len(validPorts) > 0 {
+			var parseErr error
+			exposedPorts, portBindings, parseErr = nat.ParsePortSpecs(validPorts)
+			if parseErr != nil {
+				return nil, fmt.Errorf("error al interpretar especificación de puertos: %w", parseErr)
+			}
+		}
+	}
+
+	// Filter and clean volume binds
+	var cleanVolumes []string
+	for _, v := range req.Volumes {
+		v = strings.TrimSpace(v)
+		if v != "" {
+			cleanVolumes = append(cleanVolumes, v)
+		}
+	}
+
+	// Filter and clean environment variables
+	var cleanEnv []string
+	for _, e := range req.Env {
+		e = strings.TrimSpace(e)
+		if e != "" {
+			cleanEnv = append(cleanEnv, e)
+		}
+	}
+
+	containerConfig := &container.Config{
+		Image:        req.Image,
+		Env:          cleanEnv,
+		ExposedPorts: exposedPorts,
+	}
+
+	hostConfig := &container.HostConfig{
+		PortBindings: portBindings,
+		Binds:        cleanVolumes,
+	}
+
+	if req.RestartPolicy != "" {
+		hostConfig.RestartPolicy = container.RestartPolicy{
+			Name: container.RestartPolicyMode(req.RestartPolicy),
+		}
+	}
+
+	createResp, err := s.cli.ContainerCreate(
+		ctx,
+		containerConfig,
+		hostConfig,
+		nil,
+		nil,
+		req.Name,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error al crear el contenedor: %w", err)
+	}
+
+	if req.AutoStart {
+		if startErr := s.cli.ContainerStart(ctx, createResp.ID, container.StartOptions{}); startErr != nil {
+			return &CreateContainerResult{
+				ID:       createResp.ID,
+				Warnings: createResp.Warnings,
+			}, fmt.Errorf("contenedor creado con ID %s pero falló al iniciar: %w", createResp.ID, startErr)
+		}
+	}
+
+	return &CreateContainerResult{
+		ID:       createResp.ID,
+		Warnings: createResp.Warnings,
 	}, nil
 }
 

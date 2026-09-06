@@ -216,4 +216,12 @@ func (a *App) PruneImages(danglingOnly bool) (*docker.PruneResult, error) {
 	return a.dockerService.PruneImages(a.ctx, danglingOnly)
 }
 
+// CreateContainer creates and optionally starts a new container
+func (a *App) CreateContainer(req docker.CreateContainerRequest) (*docker.CreateContainerResult, error) {
+	if err := a.checkService(); err != nil {
+		return nil, err
+	}
+	return a.dockerService.CreateContainer(a.ctx, req)
+}
+
 

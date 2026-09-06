@@ -4,6 +4,8 @@ import {docker} from '../models';
 
 export function CloseTerminal(arg1:string):Promise<void>;
 
+export function CreateContainer(arg1:docker.CreateContainerRequest):Promise<docker.CreateContainerResult>;
+
 export function GetContainerLogs(arg1:string,arg2:number):Promise<string>;
 
 export function GetContainerStats(arg1:string):Promise<docker.ContainerStats>;
