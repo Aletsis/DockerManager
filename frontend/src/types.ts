@@ -5,6 +5,15 @@ export interface PortMapping {
   type: string;
 }
 
+export interface ContainerNetworkInfo {
+  networkName: string;
+  networkId: string;
+  ipAddress: string;
+  gateway: string;
+  macAddress: string;
+  aliases?: string[];
+}
+
 export interface ContainerInfo {
   id: string;
   shortId: string;
@@ -17,6 +26,7 @@ export interface ContainerInfo {
   state: 'running' | 'paused' | 'exited' | 'restarting' | 'dead' | string;
   status: string;
   ports: PortMapping[];
+  networks?: ContainerNetworkInfo[];
   sizeRw: number;
   sizeRootFs: number;
   labels?: Record<string, string>;
@@ -30,6 +40,15 @@ export interface ComposeStackGroup {
   name: string;
   workingDir?: string;
   configFile?: string;
+  containers: ContainerInfo[];
+  runningCount: number;
+  totalCount: number;
+}
+
+export interface DockerNetworkGroup {
+  name: string;
+  networkId?: string;
+  isDefault?: boolean;
   containers: ContainerInfo[];
   runningCount: number;
   totalCount: number;

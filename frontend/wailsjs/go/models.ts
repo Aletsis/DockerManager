@@ -1,5 +1,27 @@
 export namespace docker {
 	
+	export class ContainerNetworkInfo {
+	    networkName: string;
+	    networkId: string;
+	    ipAddress: string;
+	    gateway: string;
+	    macAddress: string;
+	    aliases?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ContainerNetworkInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.networkName = source["networkName"];
+	        this.networkId = source["networkId"];
+	        this.ipAddress = source["ipAddress"];
+	        this.gateway = source["gateway"];
+	        this.macAddress = source["macAddress"];
+	        this.aliases = source["aliases"];
+	    }
+	}
 	export class PortMapping {
 	    ip: string;
 	    privatePort: number;
@@ -30,6 +52,7 @@ export namespace docker {
 	    state: string;
 	    status: string;
 	    ports: PortMapping[];
+	    networks?: ContainerNetworkInfo[];
 	    sizeRw: number;
 	    sizeRootFs: number;
 	    labels?: Record<string, string>;
@@ -55,6 +78,7 @@ export namespace docker {
 	        this.state = source["state"];
 	        this.status = source["status"];
 	        this.ports = this.convertValues(source["ports"], PortMapping);
+	        this.networks = this.convertValues(source["networks"], ContainerNetworkInfo);
 	        this.sizeRw = source["sizeRw"];
 	        this.sizeRootFs = source["sizeRootFs"];
 	        this.labels = source["labels"];
@@ -82,6 +106,7 @@ export namespace docker {
 		    return a;
 		}
 	}
+	
 	export class ContainerStats {
 	    id: string;
 	    name: string;

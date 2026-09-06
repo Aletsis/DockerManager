@@ -112,6 +112,30 @@ func (a *App) RestartStack(projectName string) error {
 	return a.dockerService.RestartStack(a.ctx, projectName)
 }
 
+// StartNetwork starts all non-running containers connected to a Docker network
+func (a *App) StartNetwork(networkName string) error {
+	if err := a.checkService(); err != nil {
+		return err
+	}
+	return a.dockerService.StartNetwork(a.ctx, networkName)
+}
+
+// StopNetwork stops all running containers connected to a Docker network
+func (a *App) StopNetwork(networkName string) error {
+	if err := a.checkService(); err != nil {
+		return err
+	}
+	return a.dockerService.StopNetwork(a.ctx, networkName)
+}
+
+// RestartNetwork restarts all containers connected to a Docker network
+func (a *App) RestartNetwork(networkName string) error {
+	if err := a.checkService(); err != nil {
+		return err
+	}
+	return a.dockerService.RestartNetwork(a.ctx, networkName)
+}
+
 // PauseContainer pauses a container
 func (a *App) PauseContainer(id string) error {
 	if err := a.checkService(); err != nil {

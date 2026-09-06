@@ -62,12 +62,20 @@ export function RestartContainer(arg1) {
   return window['go']['main']['App']['RestartContainer'](arg1);
 }
 
+export function RestartNetwork(arg1) {
+  return window['go']['main']['App']['RestartNetwork'](arg1);
+}
+
 export function RestartStack(arg1) {
   return window['go']['main']['App']['RestartStack'](arg1);
 }
 
 export function StartContainer(arg1) {
   return window['go']['main']['App']['StartContainer'](arg1);
+}
+
+export function StartNetwork(arg1) {
+  return window['go']['main']['App']['StartNetwork'](arg1);
 }
 
 export function StartStack(arg1) {
@@ -80,6 +88,10 @@ export function StartTerminal(arg1, arg2, arg3, arg4) {
 
 export function StopContainer(arg1) {
   return window['go']['main']['App']['StopContainer'](arg1);
+}
+
+export function StopNetwork(arg1) {
+  return window['go']['main']['App']['StopNetwork'](arg1);
 }
 
 export function StopStack(arg1) {

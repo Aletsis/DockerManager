@@ -12,6 +12,7 @@
     Check,
     Globe,
     Clock,
+    Network,
   } from '@lucide/svelte';
   import type { ContainerInfo, ContainerStats } from '../types';
   import { formatBytes, getStateColor, formatUptime } from '../utils';
@@ -19,6 +20,7 @@
   let {
     container,
     stats,
+    currentNetworkContext,
     onStart,
     onStop,
     onRestart,
@@ -32,6 +34,7 @@
   } = $props<{
     container: ContainerInfo;
     stats?: ContainerStats;
+    currentNetworkContext?: string;
     onStart: (id: string) => void;
     onStop: (id: string) => void;
     onRestart: (id: string) => void;
@@ -128,6 +131,46 @@
                 {p.publicPort ? `${p.publicPort}:${p.privatePort}` : `${p.privatePort}/${p.type}`}
               </span>
             {/each}
+          </div>
+        {/if}
+
+        <!-- Networks & IP Details -->
+        {#if container.networks && container.networks.length > 0}
+          <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
+            <Network class="w-3.5 h-3.5 text-teal-500/80 flex-shrink-0" />
+            {#if currentNetworkContext}
+              {@const currentNet = container.networks.find(n => n.networkName === currentNetworkContext)}
+              {#if currentNet && currentNet.ipAddress}
+                <span
+                  title={currentNet.gateway ? `Gateway: ${currentNet.gateway}` : undefined}
+                  class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/60 font-medium"
+                >
+                  IP: {currentNet.ipAddress}
+                </span>
+              {:else if currentNet}
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                  conectado
+                </span>
+              {/if}
+
+              {#if container.networks.length > 1}
+                <span
+                  title={`Otras redes: ${container.networks.filter(n => n.networkName !== currentNetworkContext).map(n => n.networkName).join(', ')}`}
+                  class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                >
+                  +{container.networks.length - 1} {container.networks.length - 1 === 1 ? 'red más' : 'redes más'}
+                </span>
+              {/if}
+            {:else}
+              {#each container.networks as net}
+                <span
+                  title={net.ipAddress ? `IP: ${net.ipAddress}${net.gateway ? ` | Gateway: ${net.gateway}` : ''}` : undefined}
+                  class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/60"
+                >
+                  {net.networkName}{net.ipAddress ? ` (${net.ipAddress})` : ''}
+                </span>
+              {/each}
+            {/if}
           </div>
         {/if}
       </div>

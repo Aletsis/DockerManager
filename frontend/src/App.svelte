@@ -3,6 +3,7 @@
   import Header from './components/Header.svelte';
   import ContainerCard from './components/ContainerCard.svelte';
   import ComposeStackCard from './components/ComposeStackCard.svelte';
+  import NetworkGroupCard from './components/NetworkGroupCard.svelte';
   import LogsModal from './components/LogsModal.svelte';
   import StatsModal from './components/StatsModal.svelte';
   import ConfirmModal from './components/ConfirmModal.svelte';
@@ -16,6 +17,7 @@
     ImageInfo,
     DiskUsageSummary,
     ComposeStackGroup,
+    DockerNetworkGroup,
   } from './types';
   import {
     ListContainers,
@@ -34,8 +36,11 @@
     StartStack,
     StopStack,
     RestartStack,
+    StartNetwork,
+    StopNetwork,
+    RestartNetwork,
   } from '../wailsjs/go/main/App';
-  import { AlertCircle, Box, Plus, Layers, List } from '@lucide/svelte';
+  import { AlertCircle, Box, Plus, Layers, List, Network } from '@lucide/svelte';
 
   // Theme State
   let isDark = $state<boolean>(() => {
@@ -58,14 +63,23 @@
   let isRefreshing = $state<boolean>(false);
   let error = $state<string | null>(null);
 
+  // Group Mode
+  type GroupMode = 'flat' | 'stack' | 'network';
 
   // Filters & Search
   let searchQuery = $state<string>('');
   let filterState = $state<'all' | 'running' | 'paused' | 'stopped'>('all');
   let refreshInterval = $state<number>(2000);
-  let groupByStack = $state<boolean>(() => {
-    const saved = localStorage.getItem('groupByStack');
-    return saved !== null ? saved === 'true' : true;
+  let groupMode = $state<GroupMode>(() => {
+    const saved = localStorage.getItem('containerGroupMode') as GroupMode | null;
+    if (saved === 'flat' || saved === 'stack' || saved === 'network') {
+      return saved;
+    }
+    const legacyStack = localStorage.getItem('groupByStack');
+    if (legacyStack !== null) {
+      return legacyStack === 'true' ? 'stack' : 'flat';
+    }
+    return 'stack';
   });
 
   // Modals & Actions
@@ -311,9 +325,50 @@
     }
   }
 
-  // Persist group by stack preference
+  // Network action handlers
+  async function handleStartNetwork(networkName: string) {
+    actionLoading = `network:${networkName}`;
+    try {
+      await StartNetwork(networkName);
+      showToast(`Red "${networkName}" iniciada exitosamente`);
+      await fetchData();
+    } catch (err: any) {
+      showToast(`Error al iniciar red: ${err}`, 'error');
+    } finally {
+      actionLoading = '';
+    }
+  }
+
+  async function handleStopNetwork(networkName: string) {
+    actionLoading = `network:${networkName}`;
+    try {
+      await StopNetwork(networkName);
+      showToast(`Red "${networkName}" detenida`);
+      await fetchData();
+    } catch (err: any) {
+      showToast(`Error al detener red: ${err}`, 'error');
+    } finally {
+      actionLoading = '';
+    }
+  }
+
+  async function handleRestartNetwork(networkName: string) {
+    actionLoading = `network:${networkName}`;
+    try {
+      await RestartNetwork(networkName);
+      showToast(`Red "${networkName}" reiniciada`);
+      await fetchData();
+    } catch (err: any) {
+      showToast(`Error al reiniciar red: ${err}`, 'error');
+    } finally {
+      actionLoading = '';
+    }
+  }
+
+  // Persist group mode preference
   $effect(() => {
-    localStorage.setItem('groupByStack', String(groupByStack));
+    localStorage.setItem('containerGroupMode', groupMode);
+    localStorage.setItem('groupByStack', String(groupMode === 'stack'));
   });
 
   // Filtered containers
@@ -330,7 +385,10 @@
         const matchId = c.shortId?.toLowerCase().includes(q);
         const matchProject = c.composeProject?.toLowerCase().includes(q);
         const matchService = c.composeService?.toLowerCase().includes(q);
-        return matchName || matchImage || matchId || !!matchProject || !!matchService;
+        const matchNetwork = c.networks?.some(
+          (n) => n.networkName?.toLowerCase().includes(q) || n.ipAddress?.toLowerCase().includes(q)
+        );
+        return matchName || matchImage || matchId || !!matchProject || !!matchService || !!matchNetwork;
       }
       return true;
     })
@@ -368,6 +426,51 @@
     return {
       stackGroups: Array.from(groupsMap.values()),
       standaloneContainers: standalone,
+    };
+  });
+
+  // Grouped Networks and Isolated Containers
+  const { networkGroups, isolatedContainers } = $derived.by(() => {
+    const groupsMap = new Map<string, DockerNetworkGroup>();
+    const isolated: ContainerInfo[] = [];
+
+    for (const c of filteredContainers) {
+      if (c.networks && c.networks.length > 0) {
+        for (const net of c.networks) {
+          let group = groupsMap.get(net.networkName);
+          if (!group) {
+            const isDefault = ['bridge', 'host', 'none'].includes(net.networkName);
+            group = {
+              name: net.networkName,
+              networkId: net.networkId,
+              isDefault,
+              containers: [],
+              runningCount: 0,
+              totalCount: 0,
+            };
+            groupsMap.set(net.networkName, group);
+          }
+          group.containers.push(c);
+          group.totalCount++;
+          if (c.state === 'running') {
+            group.runningCount++;
+          }
+        }
+      } else {
+        isolated.push(c);
+      }
+    }
+
+    // Sort: User/custom networks first alphabetically, default networks (bridge, host, none) at bottom
+    const sortedGroups = Array.from(groupsMap.values()).sort((a, b) => {
+      if (a.isDefault && !b.isDefault) return 1;
+      if (!a.isDefault && b.isDefault) return -1;
+      return a.name.localeCompare(b.name);
+    });
+
+    return {
+      networkGroups: sortedGroups,
+      isolatedContainers: isolated,
     };
   });
 </script>
@@ -424,20 +527,28 @@
           <!-- Grouping Toggle -->
           <div class="flex items-center gap-1 p-1 bg-slate-200/60 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
             <button
-              onclick={() => (groupByStack = true)}
+              onclick={() => (groupMode = 'flat')}
+              title="Ver lista plana de contenedores"
+              class="px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer {groupMode === 'flat' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
+            >
+              <List class="w-3.5 h-3.5" />
+              <span class="hidden sm:inline">Lista Plana</span>
+            </button>
+            <button
+              onclick={() => (groupMode = 'stack')}
               title="Agrupar contenedores por Docker Compose (Stacks)"
-              class="px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer {groupByStack ? 'bg-white dark:bg-slate-800 text-violet-600 dark:text-violet-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
+              class="px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer {groupMode === 'stack' ? 'bg-white dark:bg-slate-800 text-violet-600 dark:text-violet-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
             >
               <Layers class="w-3.5 h-3.5" />
               <span class="hidden sm:inline">Por Stacks</span>
             </button>
             <button
-              onclick={() => (groupByStack = false)}
-              title="Ver lista plana de contenedores"
-              class="px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer {!groupByStack ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
+              onclick={() => (groupMode = 'network')}
+              title="Agrupar contenedores por Red Docker compartida"
+              class="px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer {groupMode === 'network' ? 'bg-white dark:bg-slate-800 text-teal-600 dark:text-teal-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
             >
-              <List class="w-3.5 h-3.5" />
-              <span class="hidden sm:inline">Lista Plana</span>
+              <Network class="w-3.5 h-3.5" />
+              <span class="hidden sm:inline">Por Redes</span>
             </button>
           </div>
         </div>
@@ -515,7 +626,60 @@
       {/if}
 
       <!-- Containers List -->
-      {#if groupByStack && stackGroups.length > 0}
+      {#if groupMode === 'network' && networkGroups.length > 0}
+        <div class="space-y-4">
+          <!-- Networks Groups -->
+          {#each networkGroups as network (network.name)}
+            <NetworkGroupCard
+              {network}
+              {statsMap}
+              onStart={handleStart}
+              onStop={handleStop}
+              onRestart={handleRestart}
+              onPause={handlePause}
+              onUnpause={handleUnpause}
+              onRemove={(id, name) => (confirmDelete = { id, name })}
+              onOpenTerminal={(id, name) => (activeTerminal = { id, name })}
+              onViewLogs={(id, name) => (activeLogs = { id, name })}
+              onViewStats={(id, name) => (activeStats = { id, name })}
+              onStartNetwork={handleStartNetwork}
+              onStopNetwork={handleStopNetwork}
+              onRestartNetwork={handleRestartNetwork}
+              {actionLoading}
+            />
+          {/each}
+
+          <!-- Isolated Containers (Containers without any network) -->
+          {#if isolatedContainers.length > 0}
+            <div class="pt-2">
+              <div class="flex items-center gap-3 mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Contenedores Sin Red / Aislados ({isolatedContainers.length})
+                </span>
+                <div class="h-px bg-slate-200 dark:bg-slate-800 flex-1"></div>
+              </div>
+              <div class="space-y-3">
+                {#each isolatedContainers as container (container.id)}
+                  <ContainerCard
+                    {container}
+                    stats={statsMap[container.id]}
+                    onStart={handleStart}
+                    onStop={handleStop}
+                    onRestart={handleRestart}
+                    onPause={handlePause}
+                    onUnpause={handleUnpause}
+                    onRemove={(id, name) => (confirmDelete = { id, name })}
+                    onOpenTerminal={(id, name) => (activeTerminal = { id, name })}
+                    onViewLogs={(id, name) => (activeLogs = { id, name })}
+                    onViewStats={(id, name) => (activeStats = { id, name })}
+                    {actionLoading}
+                  />
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+      {:else if groupMode === 'stack' && stackGroups.length > 0}
         <div class="space-y-4">
           <!-- Stacks Groups -->
           {#each stackGroups as stack (stack.name)}

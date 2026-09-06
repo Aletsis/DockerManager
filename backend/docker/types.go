@@ -8,26 +8,37 @@ type PortMapping struct {
 	Type        string `json:"type"`
 }
 
+// ContainerNetworkInfo represents network attachment details for a container
+type ContainerNetworkInfo struct {
+	NetworkName string   `json:"networkName"`
+	NetworkID   string   `json:"networkId"`
+	IPAddress   string   `json:"ipAddress"`
+	Gateway     string   `json:"gateway"`
+	MacAddress  string   `json:"macAddress"`
+	Aliases     []string `json:"aliases,omitempty"`
+}
+
 // ContainerInfo represents detailed information about a Docker container
 type ContainerInfo struct {
-	ID         string        `json:"id"`
-	ShortID    string        `json:"shortId"`
-	Names      []string      `json:"names"`
-	Name       string        `json:"name"`
-	Image      string        `json:"image"`
-	ImageID    string        `json:"imageId"`
-	Command    string        `json:"command"`
-	Created    int64         `json:"created"`
-	State      string        `json:"state"`
-	Status     string        `json:"status"`
-	Ports            []PortMapping     `json:"ports"`
-	SizeRw           int64             `json:"sizeRw"`
-	SizeRootFs       int64             `json:"sizeRootFs"`
-	Labels           map[string]string `json:"labels,omitempty"`
-	ComposeProject   string            `json:"composeProject,omitempty"`
-	ComposeService   string            `json:"composeService,omitempty"`
-	ComposeWorkingDir string           `json:"composeWorkingDir,omitempty"`
-	ComposeConfigFile string           `json:"composeConfigFile,omitempty"`
+	ID                string                 `json:"id"`
+	ShortID           string                 `json:"shortId"`
+	Names             []string               `json:"names"`
+	Name              string                 `json:"name"`
+	Image             string                 `json:"image"`
+	ImageID           string                 `json:"imageId"`
+	Command           string                 `json:"command"`
+	Created           int64                  `json:"created"`
+	State             string                 `json:"state"`
+	Status            string                 `json:"status"`
+	Ports             []PortMapping          `json:"ports"`
+	Networks          []ContainerNetworkInfo `json:"networks,omitempty"`
+	SizeRw            int64                  `json:"sizeRw"`
+	SizeRootFs        int64                  `json:"sizeRootFs"`
+	Labels            map[string]string      `json:"labels,omitempty"`
+	ComposeProject    string                 `json:"composeProject,omitempty"`
+	ComposeService    string                 `json:"composeService,omitempty"`
+	ComposeWorkingDir string                 `json:"composeWorkingDir,omitempty"`
+	ComposeConfigFile string                 `json:"composeConfigFile,omitempty"`
 }
 
 // SystemOverview provides high-level metrics about the Docker daemon
