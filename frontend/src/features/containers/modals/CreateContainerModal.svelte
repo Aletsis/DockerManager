@@ -11,6 +11,7 @@
     HardDrive,
   } from '@lucide/svelte';
   import { dockerApi } from '../../../shared/services/api';
+  import { uiStore } from '../../../shared/stores/ui.svelte';
   import type { ImageInfo, CreateContainerRequest } from '../../../types';
   import PopularImagePresets, { type ImagePreset } from '../forms/PopularImagePresets.svelte';
   import PortMappingsForm, { type PortRow } from '../forms/PortMappingsForm.svelte';
@@ -264,17 +265,21 @@
                 <label for="create-restart-policy" class="text-xs font-medium text-slate-700 dark:text-slate-300">
                   Política de Reinicio
                 </label>
-                <select
-                  id="create-restart-policy"
-                  disabled={isSubmitting}
-                  bind:value={restartPolicy}
-                  class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                >
-                  <option value="no">No reiniciar automáticamente (no)</option>
-                  <option value="unless-stopped">Reiniciar a menos que se detenga manualmente (unless-stopped)</option>
-                  <option value="always">Reiniciar siempre (always)</option>
-                  <option value="on-failure">Reiniciar solo si falla (on-failure)</option>
-                </select>
+                <div class="relative">
+                  <select
+                    id="create-restart-policy"
+                    disabled={isSubmitting}
+                    bind:value={restartPolicy}
+                    class="w-full appearance-none -webkit-appearance-none px-3 py-2 pr-8 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs transition-colors"
+                    style="background-color: {uiStore.isDark ? '#1e293b' : '#ffffff'}; color: {uiStore.isDark ? '#e2e8f0' : '#1e293b'};"
+                  >
+                    <option value="no" style="background-color: {uiStore.isDark ? '#1e293b' : '#ffffff'}; color: {uiStore.isDark ? '#e2e8f0' : '#1e293b'};">No reiniciar automáticamente (no)</option>
+                    <option value="unless-stopped" style="background-color: {uiStore.isDark ? '#1e293b' : '#ffffff'}; color: {uiStore.isDark ? '#e2e8f0' : '#1e293b'};">Reiniciar a menos que se detenga manualmente (unless-stopped)</option>
+                    <option value="always" style="background-color: {uiStore.isDark ? '#1e293b' : '#ffffff'}; color: {uiStore.isDark ? '#e2e8f0' : '#1e293b'};">Reiniciar siempre (always)</option>
+                    <option value="on-failure" style="background-color: {uiStore.isDark ? '#1e293b' : '#ffffff'}; color: {uiStore.isDark ? '#e2e8f0' : '#1e293b'};">Reiniciar solo si falla (on-failure)</option>
+                  </select>
+                  <ChevronDown class="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                </div>
               </div>
 
               <label class="flex items-center gap-2 cursor-pointer select-none">

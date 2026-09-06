@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Plus, Trash2, ArrowRight } from '@lucide/svelte';
+  import { Plus, Trash2, ArrowRight, ChevronDown } from '@lucide/svelte';
+  import { uiStore } from '../../../shared/stores/ui.svelte';
 
   export interface PortRow {
     host: string;
@@ -116,15 +117,19 @@
 
           <div class="w-24 space-y-1">
             <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Protocolo</span>
-            <select
-              aria-label="Protocolo de puerto"
-              {disabled}
-              bind:value={port.protocol}
-              class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-            >
-              <option value="tcp">TCP</option>
-              <option value="udp">UDP</option>
-            </select>
+            <div class="relative">
+              <select
+                aria-label="Protocolo de puerto"
+                {disabled}
+                bind:value={port.protocol}
+                class="w-full appearance-none -webkit-appearance-none text-xs py-1.5 pl-2.5 pr-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer shadow-xs transition-colors"
+                style="background-color: {uiStore.isDark ? '#1e293b' : '#ffffff'}; color: {uiStore.isDark ? '#e2e8f0' : '#1e293b'};"
+              >
+                <option value="tcp" style="background-color: {uiStore.isDark ? '#1e293b' : '#ffffff'}; color: {uiStore.isDark ? '#e2e8f0' : '#1e293b'};">TCP</option>
+                <option value="udp" style="background-color: {uiStore.isDark ? '#1e293b' : '#ffffff'}; color: {uiStore.isDark ? '#e2e8f0' : '#1e293b'};">UDP</option>
+              </select>
+              <ChevronDown class="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
           </div>
 
           <div class="pt-4">
