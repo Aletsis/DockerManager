@@ -76,6 +76,14 @@
         {filteredContainers.length} de {containersStore.containers.length} contenedores
       </div>
       <button
+        onclick={() => uiStore.openNewStackModal()}
+        class="px-3 py-1.5 rounded-xl text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 transition-colors flex items-center gap-1.5 shadow-sm shadow-violet-500/20 cursor-pointer"
+        title="Crear y desplegar un nuevo stack de Docker Compose"
+      >
+        <Layers class="w-3.5 h-3.5" />
+        <span>Nuevo Stack</span>
+      </button>
+      <button
         onclick={() => uiStore.openCreateModal()}
         class="px-3 py-1.5 rounded-xl text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors flex items-center gap-1.5 shadow-sm shadow-blue-500/20 cursor-pointer"
       >

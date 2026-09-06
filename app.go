@@ -16,6 +16,7 @@ import (
 	containerdomain "dockermanager/internal/domain/container"
 	imagedomain "dockermanager/internal/domain/image"
 	networkdomain "dockermanager/internal/domain/network"
+	stackdomain "dockermanager/internal/domain/stack"
 	systemdomain "dockermanager/internal/domain/system"
 	terminaldomain "dockermanager/internal/domain/terminal"
 	volumedomain "dockermanager/internal/domain/volume"
@@ -235,6 +236,72 @@ func (a *App) RestartStack(projectName string) error {
 	}
 	return a.stackUC.RestartStack(a.ctx, projectName)
 }
+
+// UpStack deploys or updates a compose stack with streaming output
+func (a *App) UpStack(req stackdomain.ComposeDeployRequest) error {
+	if err := a.ensureInitialized(); err != nil {
+		return err
+	}
+	return a.stackUC.UpStack(a.ctx, req, func(line string) {
+		runtime.EventsEmit(a.ctx, "stack:deploy:output", line)
+	})
+}
+
+// DownStack dismantles and stops a compose stack with streaming output
+func (a *App) DownStack(req stackdomain.ComposeDownRequest) error {
+	if err := a.ensureInitialized(); err != nil {
+		return err
+	}
+	return a.stackUC.DownStack(a.ctx, req, func(line string) {
+		runtime.EventsEmit(a.ctx, "stack:deploy:output", line)
+	})
+}
+
+// GetStackComposeFile retrieves compose.yaml content and metadata
+func (a *App) GetStackComposeFile(projectName, workingDir, configFile string) (*stackdomain.ComposeFileInfo, error) {
+	if err := a.ensureInitialized(); err != nil {
+		return nil, err
+	}
+	return a.stackUC.GetComposeFile(a.ctx, projectName, workingDir, configFile)
+}
+
+// SaveStackComposeFile writes compose.yaml to disk
+func (a *App) SaveStackComposeFile(workingDir, configFile, content string) (string, error) {
+	if err := a.ensureInitialized(); err != nil {
+		return "", err
+	}
+	return a.stackUC.SaveComposeFile(a.ctx, workingDir, configFile, content)
+}
+
+// SaveStackFile writes any stack file (compose.yaml or Dockerfile) to disk
+func (a *App) SaveStackFile(filePath string, content string) error {
+	if err := a.ensureInitialized(); err != nil {
+		return err
+	}
+	_, err := a.stackUC.SaveComposeFile(a.ctx, "", filePath, content)
+	return err
+}
+
+
+// GetDefaultStackDirectory returns the suggested storage directory for a stack
+func (a *App) GetDefaultStackDirectory(projectName string) (string, error) {
+	if err := a.ensureInitialized(); err != nil {
+		return "", err
+	}
+	return a.stackUC.GetDefaultStackDirectory(projectName)
+}
+
+// SelectDirectory opens a native OS directory picker dialog
+func (a *App) SelectDirectory() (string, error) {
+	dir, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Seleccionar Carpeta para Docker Compose",
+	})
+	if err != nil {
+		return "", err
+	}
+	return dir, nil
+}
+
 
 // StartNetwork starts all non-running containers attached to a network
 func (a *App) StartNetwork(networkName string) error {

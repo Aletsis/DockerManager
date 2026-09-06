@@ -9,6 +9,7 @@
   import CreateNetworkModal from '../../features/networks/modals/CreateNetworkModal.svelte';
   import ConnectContainerModal from '../../features/networks/modals/ConnectContainerModal.svelte';
   import NetworkInspectModal from '../../features/networks/modals/NetworkInspectModal.svelte';
+  import StackEditorModal from '../../features/stacks/modals/StackEditorModal.svelte';
   import { uiStore } from '../stores/ui.svelte';
   import { containersStore } from '../../features/containers/stores/containers.svelte';
   import { imagesStore } from '../../features/images/stores/images.svelte';
@@ -104,3 +105,19 @@
   onCancel={() => uiStore.closeConfirmDelete()}
   isDestructive={true}
 />
+
+<!-- Stack Editor / Deploy Modal -->
+{#if uiStore.activeStackModal}
+  <StackEditorModal
+    isOpen={!!uiStore.activeStackModal}
+    mode={uiStore.activeStackModal.mode}
+    initialStackName={uiStore.activeStackModal.stackName}
+    initialWorkingDir={uiStore.activeStackModal.workingDir}
+    initialConfigFile={uiStore.activeStackModal.configFile}
+    onClose={() => uiStore.closeStackModal()}
+    onSuccess={() => {
+      containersStore.fetchData(true);
+    }}
+  />
+{/if}
+

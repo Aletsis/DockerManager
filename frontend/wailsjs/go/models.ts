@@ -402,6 +402,109 @@ export namespace network {
 
 }
 
+export namespace stack {
+	
+	export class ComposeDeployRequest {
+	    projectName: string;
+	    workingDir: string;
+	    configFile: string;
+	    content?: string;
+	    removeOrphans: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ComposeDeployRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.projectName = source["projectName"];
+	        this.workingDir = source["workingDir"];
+	        this.configFile = source["configFile"];
+	        this.content = source["content"];
+	        this.removeOrphans = source["removeOrphans"];
+	    }
+	}
+	export class ComposeDownRequest {
+	    projectName: string;
+	    workingDir: string;
+	    configFile: string;
+	    removeVolumes: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ComposeDownRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.projectName = source["projectName"];
+	        this.workingDir = source["workingDir"];
+	        this.configFile = source["configFile"];
+	        this.removeVolumes = source["removeVolumes"];
+	    }
+	}
+	export class DockerfileInfo {
+	    name: string;
+	    path: string;
+	    serviceName?: string;
+	    content: string;
+	    existsOnDisk: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new DockerfileInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.path = source["path"];
+	        this.serviceName = source["serviceName"];
+	        this.content = source["content"];
+	        this.existsOnDisk = source["existsOnDisk"];
+	    }
+	}
+	export class ComposeFileInfo {
+	    projectName: string;
+	    workingDir: string;
+	    configFile: string;
+	    content: string;
+	    existsOnDisk: boolean;
+	    dockerfiles: DockerfileInfo[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ComposeFileInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.projectName = source["projectName"];
+	        this.workingDir = source["workingDir"];
+	        this.configFile = source["configFile"];
+	        this.content = source["content"];
+	        this.existsOnDisk = source["existsOnDisk"];
+	        this.dockerfiles = this.convertValues(source["dockerfiles"], DockerfileInfo);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace system {
 	
 	export class Overview {

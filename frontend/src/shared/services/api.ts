@@ -14,6 +14,9 @@ import type {
   NetworkInfo,
   CreateNetworkRequest,
   NetworkPruneResult,
+  ComposeDeployRequest,
+  ComposeDownRequest,
+  ComposeFileInfo,
 } from '../../types';
 
 /**
@@ -58,6 +61,24 @@ export const dockerApi = {
   startStack: (name: string): Promise<void> => WailsApp.StartStack(name),
   stopStack: (name: string): Promise<void> => WailsApp.StopStack(name),
   restartStack: (name: string): Promise<void> => WailsApp.RestartStack(name),
+  upStack: (req: ComposeDeployRequest): Promise<void> => WailsApp.UpStack(req as any),
+  downStack: (req: ComposeDownRequest): Promise<void> => WailsApp.DownStack(req as any),
+  getStackComposeFile: async (projectName: string, workingDir = '', configFile = ''): Promise<ComposeFileInfo> => {
+    const res = await WailsApp.GetStackComposeFile(projectName, workingDir, configFile);
+    return res as unknown as ComposeFileInfo;
+  },
+  saveStackComposeFile: (workingDir: string, configFile: string, content: string): Promise<string> => {
+    return WailsApp.SaveStackComposeFile(workingDir, configFile, content);
+  },
+  saveStackFile: (filePath: string, content: string): Promise<void> => {
+    return WailsApp.SaveStackFile(filePath, content);
+  },
+  getDefaultStackDirectory: (projectName: string): Promise<string> => {
+    return WailsApp.GetDefaultStackDirectory(projectName);
+  },
+  selectDirectory: (): Promise<string> => WailsApp.SelectDirectory(),
+
+
 
   // Networks
   startNetwork: (name: string): Promise<void> => WailsApp.StartNetwork(name),

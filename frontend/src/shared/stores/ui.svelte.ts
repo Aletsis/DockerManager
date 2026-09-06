@@ -5,6 +5,13 @@ export interface ToastNotification {
   type: 'success' | 'error';
 }
 
+export interface ActiveStackModalState {
+  mode: 'create' | 'edit';
+  stackName?: string;
+  workingDir?: string;
+  configFile?: string;
+}
+
 class UiStore {
   isDark = $state<boolean>((() => {
     const saved = localStorage.getItem('theme');
@@ -24,10 +31,12 @@ class UiStore {
   activeVolumeInspect = $state<{ name: string } | null>(null);
   activeNetworkInspect = $state<{ id: string; name: string } | null>(null);
   activeConnectContainer = $state<{ networkId: string; networkName: string } | null>(null);
+  activeStackModal = $state<ActiveStackModalState | null>(null);
   isCreateNetworkModalOpen = $state<boolean>(false);
   confirmDelete = $state<{ id: string; name: string } | null>(null);
   isCreateModalOpen = $state<boolean>(false);
   createModalInitialImage = $state<string>('');
+
 
   private toastTimeout: any = null;
 
@@ -145,6 +154,18 @@ class UiStore {
   closeCreateModal() {
     this.isCreateModalOpen = false;
     this.createModalInitialImage = '';
+  }
+
+  openNewStackModal() {
+    this.activeStackModal = { mode: 'create' };
+  }
+
+  openEditStackModal(stackName: string, workingDir?: string, configFile?: string) {
+    this.activeStackModal = { mode: 'edit', stackName, workingDir, configFile };
+  }
+
+  closeStackModal() {
+    this.activeStackModal = null;
   }
 }
 

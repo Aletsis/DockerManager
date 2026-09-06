@@ -8,10 +8,12 @@
     RotateCw,
     Folder,
     Loader2,
+    FileCode,
   } from '@lucide/svelte';
   import type { ComposeStackGroup } from '../../../types';
   import ContainerCard from './ContainerCard.svelte';
   import { containersStore } from '../stores/containers.svelte';
+  import { uiStore } from '../../../shared/stores/ui.svelte';
 
   let { stack } = $props<{ stack: ComposeStackGroup }>();
 
@@ -82,6 +84,17 @@
             <span>Procesando stack...</span>
           </div>
         {:else}
+          <!-- Edit Compose YAML -->
+          <button
+            onclick={() => uiStore.openEditStackModal(stack.name, stack.workingDir, stack.configFile)}
+            disabled={!!containersStore.actionLoading}
+            title="Ver o editar compose.yaml / re-desplegar stack"
+            class="px-2.5 py-1 rounded-lg text-xs font-medium border border-violet-200 dark:border-violet-800 bg-white dark:bg-slate-900 hover:bg-violet-50 dark:hover:bg-violet-950/40 text-violet-700 dark:text-violet-300 transition-colors flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          >
+            <FileCode class="w-3.5 h-3.5" />
+            <span class="hidden md:inline">Editar YAML</span>
+          </button>
+
           <!-- Start Stack -->
           <button
             onclick={() => containersStore.handleStartStack(stack.name)}

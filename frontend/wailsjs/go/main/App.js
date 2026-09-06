@@ -22,6 +22,10 @@ export function DisconnectContainerFromNetwork(arg1, arg2, arg3) {
   return window['go']['main']['App']['DisconnectContainerFromNetwork'](arg1, arg2, arg3);
 }
 
+export function DownStack(arg1) {
+  return window['go']['main']['App']['DownStack'](arg1);
+}
+
 export function GetAppVersion() {
   return window['go']['main']['App']['GetAppVersion']();
 }
@@ -34,12 +38,20 @@ export function GetContainerStats(arg1) {
   return window['go']['main']['App']['GetContainerStats'](arg1);
 }
 
+export function GetDefaultStackDirectory(arg1) {
+  return window['go']['main']['App']['GetDefaultStackDirectory'](arg1);
+}
+
 export function GetDiskUsage() {
   return window['go']['main']['App']['GetDiskUsage']();
 }
 
 export function GetOverview() {
   return window['go']['main']['App']['GetOverview']();
+}
+
+export function GetStackComposeFile(arg1, arg2, arg3) {
+  return window['go']['main']['App']['GetStackComposeFile'](arg1, arg2, arg3);
 }
 
 export function GetVolumeDiskUsage() {
@@ -130,6 +142,18 @@ export function RestartStack(arg1) {
   return window['go']['main']['App']['RestartStack'](arg1);
 }
 
+export function SaveStackComposeFile(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SaveStackComposeFile'](arg1, arg2, arg3);
+}
+
+export function SaveStackFile(arg1, arg2) {
+  return window['go']['main']['App']['SaveStackFile'](arg1, arg2);
+}
+
+export function SelectDirectory() {
+  return window['go']['main']['App']['SelectDirectory']();
+}
+
 export function StartContainer(arg1) {
   return window['go']['main']['App']['StartContainer'](arg1);
 }
@@ -160,6 +184,10 @@ export function StopStack(arg1) {
 
 export function UnpauseContainer(arg1) {
   return window['go']['main']['App']['UnpauseContainer'](arg1);
+}
+
+export function UpStack(arg1) {
+  return window['go']['main']['App']['UpStack'](arg1);
 }
 
 export function WriteTerminal(arg1, arg2) {
