@@ -8,7 +8,7 @@
     Search,
     ArrowDown,
   } from '@lucide/svelte';
-  import { GetContainerLogs } from '../../wailsjs/go/main/App';
+  import { GetContainerLogs } from '../../../wailsjs/go/main/App';
 
   let {
     containerId,

@@ -8,9 +8,9 @@
     RotateCw,
     Loader2,
   } from '@lucide/svelte';
-  import type { DockerNetworkGroup } from '../types';
+  import type { DockerNetworkGroup } from '../../types';
   import ContainerCard from './ContainerCard.svelte';
-  import { containersStore } from '../stores/containers.svelte';
+  import { containersStore } from '../../stores/containers.svelte';
 
   let { network } = $props<{ network: DockerNetworkGroup }>();
 

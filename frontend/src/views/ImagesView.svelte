@@ -18,8 +18,8 @@
   } from '@lucide/svelte';
   import type { ImageInfo } from '../types';
   import { formatBytes, formatRelativeTime } from '../utils';
-  import ConfirmModal from '../components/ConfirmModal.svelte';
-  import PullImageModal from '../components/PullImageModal.svelte';
+  import ConfirmModal from '../components/modals/ConfirmModal.svelte';
+  import PullImageModal from '../components/modals/PullImageModal.svelte';
   import { imagesStore } from '../stores/images.svelte';
   import { containersStore } from '../stores/containers.svelte';
   import { uiStore } from '../stores/ui.svelte';

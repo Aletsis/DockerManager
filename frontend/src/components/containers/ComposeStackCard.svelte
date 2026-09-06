@@ -9,9 +9,9 @@
     Folder,
     Loader2,
   } from '@lucide/svelte';
-  import type { ComposeStackGroup } from '../types';
+  import type { ComposeStackGroup } from '../../types';
   import ContainerCard from './ContainerCard.svelte';
-  import { containersStore } from '../stores/containers.svelte';
+  import { containersStore } from '../../stores/containers.svelte';
 
   let { stack } = $props<{ stack: ComposeStackGroup }>();
 

@@ -12,7 +12,7 @@
     ChevronDown,
     HardDrive,
   } from '@lucide/svelte';
-  import type { SystemOverview, DiskUsageSummary } from '../types';
+  import type { SystemOverview, DiskUsageSummary } from '../../types';
 
   let {
     overview,

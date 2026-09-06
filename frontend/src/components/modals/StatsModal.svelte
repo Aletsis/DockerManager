@@ -8,9 +8,9 @@
     HardDrive,
     Users,
   } from '@lucide/svelte';
-  import type { ContainerStats } from '../types';
-  import { GetContainerStats } from '../../wailsjs/go/main/App';
-  import { formatBytes } from '../utils';
+  import type { ContainerStats } from '../../types';
+  import { GetContainerStats } from '../../../wailsjs/go/main/App';
+  import { formatBytes } from '../../utils';
 
   let {
     containerId,

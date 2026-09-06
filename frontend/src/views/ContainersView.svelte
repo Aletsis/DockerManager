@@ -1,7 +1,7 @@
 <script lang="ts">
-  import ContainerCard from '../components/ContainerCard.svelte';
-  import ComposeStackCard from '../components/ComposeStackCard.svelte';
-  import NetworkGroupCard from '../components/NetworkGroupCard.svelte';
+  import ContainerCard from '../components/containers/ContainerCard.svelte';
+  import ComposeStackCard from '../components/containers/ComposeStackCard.svelte';
+  import NetworkGroupCard from '../components/containers/NetworkGroupCard.svelte';
   import { containersStore } from '../stores/containers.svelte';
   import { uiStore } from '../stores/ui.svelte';
   import { AlertCircle, Box, Plus, Layers, List, Network } from '@lucide/svelte';

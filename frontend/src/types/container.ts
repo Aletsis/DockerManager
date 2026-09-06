@@ -36,36 +36,6 @@ export interface ContainerInfo {
   composeConfigFile?: string;
 }
 
-export interface ComposeStackGroup {
-  name: string;
-  workingDir?: string;
-  configFile?: string;
-  containers: ContainerInfo[];
-  runningCount: number;
-  totalCount: number;
-}
-
-export interface DockerNetworkGroup {
-  name: string;
-  networkId?: string;
-  isDefault?: boolean;
-  containers: ContainerInfo[];
-  runningCount: number;
-  totalCount: number;
-}
-
-export interface SystemOverview {
-  containers: number;
-  containersRunning: number;
-  containersPaused: number;
-  containersStopped: number;
-  images: number;
-  serverVersion: string;
-  operatingSystem: string;
-  ncpu: number;
-  memTotal: number;
-}
-
 export interface ContainerStats {
   id: string;
   name: string;
@@ -78,42 +48,6 @@ export interface ContainerStats {
   blockRead: number;
   blockWrite: number;
   pids: number;
-}
-
-export interface ImageInfo {
-  id: string;
-  shortId: string;
-  repository: string;
-  tag: string;
-  repoTags: string[];
-  created: number;
-  size: number;
-  sharedSize: number;
-  containers: number;
-  inUse: boolean;
-  isDangling: boolean;
-}
-
-export interface DiskUsageSummary {
-  totalImages: number;
-  totalSize: number;
-  danglingCount: number;
-  danglingSize: number;
-  reclaimableSize: number;
-}
-
-export interface PruneResult {
-  imagesDeleted: string[];
-  spaceReclaimed: number;
-}
-
-export interface PullProgressEvent {
-  id: string;
-  status: string;
-  progress: string;
-  current: number;
-  total: number;
-  error?: string;
 }
 
 export interface CreateContainerRequest {
@@ -130,4 +64,3 @@ export interface CreateContainerResult {
   id: string;
   warnings?: string[];
 }
-

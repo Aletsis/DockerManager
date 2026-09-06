@@ -17,8 +17,8 @@
     WriteTerminal,
     ResizeTerminal,
     CloseTerminal,
-  } from '../../wailsjs/go/main/App';
-  import { EventsOn, EventsOff } from '../../wailsjs/runtime/runtime';
+  } from '../../../wailsjs/go/main/App';
+  import { EventsOn, EventsOff } from '../../../wailsjs/runtime/runtime';
 
   let {
     containerId,

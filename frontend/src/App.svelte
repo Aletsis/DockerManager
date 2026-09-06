@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import Header from './components/Header.svelte';
+  import Header from './components/layout/Header.svelte';
   import ContainersView from './views/ContainersView.svelte';
   import ImagesView from './views/ImagesView.svelte';
-  import ModalManager from './components/ModalManager.svelte';
+  import ModalManager from './components/modals/ModalManager.svelte';
   import { uiStore } from './stores/ui.svelte';
   import { containersStore } from './stores/containers.svelte';
   import { imagesStore } from './stores/images.svelte';

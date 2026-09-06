@@ -10,12 +10,12 @@
     Check,
     HardDrive,
   } from '@lucide/svelte';
-  import { dockerApi } from '../services/api';
-  import type { ImageInfo, CreateContainerRequest } from '../types';
-  import PopularImagePresets, { type ImagePreset } from './forms/PopularImagePresets.svelte';
-  import PortMappingsForm, { type PortRow } from './forms/PortMappingsForm.svelte';
-  import VolumeMappingsForm, { type VolumeRow } from './forms/VolumeMappingsForm.svelte';
-  import EnvVariablesForm, { type EnvRow } from './forms/EnvVariablesForm.svelte';
+  import { dockerApi } from '../../services/api';
+  import type { ImageInfo, CreateContainerRequest } from '../../types';
+  import PopularImagePresets, { type ImagePreset } from '../forms/PopularImagePresets.svelte';
+  import PortMappingsForm, { type PortRow } from '../forms/PortMappingsForm.svelte';
+  import VolumeMappingsForm, { type VolumeRow } from '../forms/VolumeMappingsForm.svelte';
+  import EnvVariablesForm, { type EnvRow } from '../forms/EnvVariablesForm.svelte';
 
   let {
     isOpen = false,

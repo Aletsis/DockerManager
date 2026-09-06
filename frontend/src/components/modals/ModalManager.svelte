@@ -4,9 +4,9 @@
   import StatsModal from './StatsModal.svelte';
   import ConfirmModal from './ConfirmModal.svelte';
   import CreateContainerModal from './CreateContainerModal.svelte';
-  import { uiStore } from '../stores/ui.svelte';
-  import { containersStore } from '../stores/containers.svelte';
-  import { imagesStore } from '../stores/images.svelte';
+  import { uiStore } from '../../stores/ui.svelte';
+  import { containersStore } from '../../stores/containers.svelte';
+  import { imagesStore } from '../../stores/images.svelte';
 
   async function handleConfirmDelete() {
     if (!uiStore.confirmDelete) return;

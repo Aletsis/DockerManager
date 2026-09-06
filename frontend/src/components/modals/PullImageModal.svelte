@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { Download, X, AlertCircle, CheckCircle2, Loader2, Sparkles } from '@lucide/svelte';
-  import { PullImage } from '../../wailsjs/go/main/App';
-  import { EventsOn, EventsOff } from '../../wailsjs/runtime/runtime';
-  import type { PullProgressEvent } from '../types';
-  import { formatBytes } from '../utils';
+  import { PullImage } from '../../../wailsjs/go/main/App';
+  import { EventsOn, EventsOff } from '../../../wailsjs/runtime/runtime';
+  import type { PullProgressEvent } from '../../types';
+  import { formatBytes } from '../../utils';
 
   let {
     isOpen = false,

@@ -14,10 +14,10 @@
     Clock,
     Network,
   } from '@lucide/svelte';
-  import type { ContainerInfo } from '../types';
-  import { formatBytes, getStateColor, formatUptime } from '../utils';
-  import { containersStore } from '../stores/containers.svelte';
-  import { uiStore } from '../stores/ui.svelte';
+  import type { ContainerInfo } from '../../types';
+  import { formatBytes, getStateColor, formatUptime } from '../../utils';
+  import { containersStore } from '../../stores/containers.svelte';
+  import { uiStore } from '../../stores/ui.svelte';
 
   let {
     container,
