@@ -32,6 +32,11 @@ export namespace docker {
 	    ports: PortMapping[];
 	    sizeRw: number;
 	    sizeRootFs: number;
+	    labels?: Record<string, string>;
+	    composeProject?: string;
+	    composeService?: string;
+	    composeWorkingDir?: string;
+	    composeConfigFile?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ContainerInfo(source);
@@ -52,6 +57,11 @@ export namespace docker {
 	        this.ports = this.convertValues(source["ports"], PortMapping);
 	        this.sizeRw = source["sizeRw"];
 	        this.sizeRootFs = source["sizeRootFs"];
+	        this.labels = source["labels"];
+	        this.composeProject = source["composeProject"];
+	        this.composeService = source["composeService"];
+	        this.composeWorkingDir = source["composeWorkingDir"];
+	        this.composeConfigFile = source["composeConfigFile"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

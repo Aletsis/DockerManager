@@ -19,6 +19,20 @@ export interface ContainerInfo {
   ports: PortMapping[];
   sizeRw: number;
   sizeRootFs: number;
+  labels?: Record<string, string>;
+  composeProject?: string;
+  composeService?: string;
+  composeWorkingDir?: string;
+  composeConfigFile?: string;
+}
+
+export interface ComposeStackGroup {
+  name: string;
+  workingDir?: string;
+  configFile?: string;
+  containers: ContainerInfo[];
+  runningCount: number;
+  totalCount: number;
 }
 
 export interface SystemOverview {

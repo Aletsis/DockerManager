@@ -62,8 +62,16 @@ export function RestartContainer(arg1) {
   return window['go']['main']['App']['RestartContainer'](arg1);
 }
 
+export function RestartStack(arg1) {
+  return window['go']['main']['App']['RestartStack'](arg1);
+}
+
 export function StartContainer(arg1) {
   return window['go']['main']['App']['StartContainer'](arg1);
+}
+
+export function StartStack(arg1) {
+  return window['go']['main']['App']['StartStack'](arg1);
 }
 
 export function StartTerminal(arg1, arg2, arg3, arg4) {
@@ -72,6 +80,10 @@ export function StartTerminal(arg1, arg2, arg3, arg4) {
 
 export function StopContainer(arg1) {
   return window['go']['main']['App']['StopContainer'](arg1);
+}
+
+export function StopStack(arg1) {
+  return window['go']['main']['App']['StopStack'](arg1);
 }
 
 export function UnpauseContainer(arg1) {

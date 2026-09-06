@@ -88,6 +88,30 @@ func (a *App) RestartContainer(id string) error {
 	return a.dockerService.RestartContainer(a.ctx, id)
 }
 
+// StartStack starts all non-running containers in a compose project
+func (a *App) StartStack(projectName string) error {
+	if err := a.checkService(); err != nil {
+		return err
+	}
+	return a.dockerService.StartStack(a.ctx, projectName)
+}
+
+// StopStack stops all running containers in a compose project
+func (a *App) StopStack(projectName string) error {
+	if err := a.checkService(); err != nil {
+		return err
+	}
+	return a.dockerService.StopStack(a.ctx, projectName)
+}
+
+// RestartStack restarts all containers in a compose project
+func (a *App) RestartStack(projectName string) error {
+	if err := a.checkService(); err != nil {
+		return err
+	}
+	return a.dockerService.RestartStack(a.ctx, projectName)
+}
+
 // PauseContainer pauses a container
 func (a *App) PauseContainer(id string) error {
 	if err := a.checkService(); err != nil {

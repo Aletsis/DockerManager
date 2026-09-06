@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import Header from './components/Header.svelte';
   import ContainerCard from './components/ContainerCard.svelte';
+  import ComposeStackCard from './components/ComposeStackCard.svelte';
   import LogsModal from './components/LogsModal.svelte';
   import StatsModal from './components/StatsModal.svelte';
   import ConfirmModal from './components/ConfirmModal.svelte';
@@ -14,6 +15,7 @@
     ContainerStats,
     ImageInfo,
     DiskUsageSummary,
+    ComposeStackGroup,
   } from './types';
   import {
     ListContainers,
@@ -29,8 +31,11 @@
     GetDiskUsage,
     RemoveImage,
     PruneImages,
+    StartStack,
+    StopStack,
+    RestartStack,
   } from '../wailsjs/go/main/App';
-  import { AlertCircle, Box, Plus } from '@lucide/svelte';
+  import { AlertCircle, Box, Plus, Layers, List } from '@lucide/svelte';
 
   // Theme State
   let isDark = $state<boolean>(() => {
@@ -58,6 +63,10 @@
   let searchQuery = $state<string>('');
   let filterState = $state<'all' | 'running' | 'paused' | 'stopped'>('all');
   let refreshInterval = $state<number>(2000);
+  let groupByStack = $state<boolean>(() => {
+    const saved = localStorage.getItem('groupByStack');
+    return saved !== null ? saved === 'true' : true;
+  });
 
   // Modals & Actions
   let activeTerminal = $state<{ id: string; name: string } | null>(null);
@@ -262,6 +271,51 @@
     }
   }
 
+  // Stack action handlers
+  async function handleStartStack(projectName: string) {
+    actionLoading = `stack:${projectName}`;
+    try {
+      await StartStack(projectName);
+      showToast(`Stack "${projectName}" iniciado exitosamente`);
+      await fetchData();
+    } catch (err: any) {
+      showToast(`Error al iniciar stack: ${err}`, 'error');
+    } finally {
+      actionLoading = '';
+    }
+  }
+
+  async function handleStopStack(projectName: string) {
+    actionLoading = `stack:${projectName}`;
+    try {
+      await StopStack(projectName);
+      showToast(`Stack "${projectName}" detenido`);
+      await fetchData();
+    } catch (err: any) {
+      showToast(`Error al detener stack: ${err}`, 'error');
+    } finally {
+      actionLoading = '';
+    }
+  }
+
+  async function handleRestartStack(projectName: string) {
+    actionLoading = `stack:${projectName}`;
+    try {
+      await RestartStack(projectName);
+      showToast(`Stack "${projectName}" reiniciado`);
+      await fetchData();
+    } catch (err: any) {
+      showToast(`Error al reiniciar stack: ${err}`, 'error');
+    } finally {
+      actionLoading = '';
+    }
+  }
+
+  // Persist group by stack preference
+  $effect(() => {
+    localStorage.setItem('groupByStack', String(groupByStack));
+  });
+
   // Filtered containers
   const filteredContainers = $derived(
     containers.filter((c) => {
@@ -274,11 +328,48 @@
         const matchName = c.name?.toLowerCase().includes(q);
         const matchImage = c.image?.toLowerCase().includes(q);
         const matchId = c.shortId?.toLowerCase().includes(q);
-        return matchName || matchImage || matchId;
+        const matchProject = c.composeProject?.toLowerCase().includes(q);
+        const matchService = c.composeService?.toLowerCase().includes(q);
+        return matchName || matchImage || matchId || !!matchProject || !!matchService;
       }
       return true;
     })
   );
+
+  // Grouped Compose Stacks and Standalone Containers
+  const { stackGroups, standaloneContainers } = $derived.by(() => {
+    const groupsMap = new Map<string, ComposeStackGroup>();
+    const standalone: ContainerInfo[] = [];
+
+    for (const c of filteredContainers) {
+      if (c.composeProject) {
+        let group = groupsMap.get(c.composeProject);
+        if (!group) {
+          group = {
+            name: c.composeProject,
+            workingDir: c.composeWorkingDir,
+            configFile: c.composeConfigFile,
+            containers: [],
+            runningCount: 0,
+            totalCount: 0,
+          };
+          groupsMap.set(c.composeProject, group);
+        }
+        group.containers.push(c);
+        group.totalCount++;
+        if (c.state === 'running') {
+          group.runningCount++;
+        }
+      } else {
+        standalone.push(c);
+      }
+    }
+
+    return {
+      stackGroups: Array.from(groupsMap.values()),
+      standaloneContainers: standalone,
+    };
+  });
 </script>
 
 <div class="h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200 overflow-hidden">
@@ -302,31 +393,53 @@
 
       <!-- Filter Chips Bar -->
       <div class="flex items-center justify-between gap-2 flex-wrap">
-        <div class="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
-          <button
-            onclick={() => (filterState = 'all')}
-            class="px-3 py-1 rounded-lg font-medium transition-colors {filterState === 'all' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
-          >
-            Todos ({containers.length})
-          </button>
-          <button
-            onclick={() => (filterState = 'running')}
-            class="px-3 py-1 rounded-lg font-medium transition-colors {filterState === 'running' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
-          >
-            Activos ({overview?.containersRunning || 0})
-          </button>
-          <button
-            onclick={() => (filterState = 'stopped')}
-            class="px-3 py-1 rounded-lg font-medium transition-colors {filterState === 'stopped' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
-          >
-            Detenidos ({overview?.containersStopped || 0})
-          </button>
-          <button
-            onclick={() => (filterState = 'paused')}
-            class="px-3 py-1 rounded-lg font-medium transition-colors {filterState === 'paused' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
-          >
-            Pausados ({overview?.containersPaused || 0})
-          </button>
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+            <button
+              onclick={() => (filterState = 'all')}
+              class="px-3 py-1 rounded-lg font-medium transition-colors {filterState === 'all' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
+            >
+              Todos ({containers.length})
+            </button>
+            <button
+              onclick={() => (filterState = 'running')}
+              class="px-3 py-1 rounded-lg font-medium transition-colors {filterState === 'running' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
+            >
+              Activos ({overview?.containersRunning || 0})
+            </button>
+            <button
+              onclick={() => (filterState = 'stopped')}
+              class="px-3 py-1 rounded-lg font-medium transition-colors {filterState === 'stopped' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
+            >
+              Detenidos ({overview?.containersStopped || 0})
+            </button>
+            <button
+              onclick={() => (filterState = 'paused')}
+              class="px-3 py-1 rounded-lg font-medium transition-colors {filterState === 'paused' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
+            >
+              Pausados ({overview?.containersPaused || 0})
+            </button>
+          </div>
+
+          <!-- Grouping Toggle -->
+          <div class="flex items-center gap-1 p-1 bg-slate-200/60 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+            <button
+              onclick={() => (groupByStack = true)}
+              title="Agrupar contenedores por Docker Compose (Stacks)"
+              class="px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer {groupByStack ? 'bg-white dark:bg-slate-800 text-violet-600 dark:text-violet-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
+            >
+              <Layers class="w-3.5 h-3.5" />
+              <span class="hidden sm:inline">Por Stacks</span>
+            </button>
+            <button
+              onclick={() => (groupByStack = false)}
+              title="Ver lista plana de contenedores"
+              class="px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer {!groupByStack ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}"
+            >
+              <List class="w-3.5 h-3.5" />
+              <span class="hidden sm:inline">Lista Plana</span>
+            </button>
+          </div>
         </div>
 
         <div class="flex items-center gap-3">
@@ -402,24 +515,80 @@
       {/if}
 
       <!-- Containers List -->
-      <div class="space-y-3">
-        {#each filteredContainers as container (container.id)}
-          <ContainerCard
-            {container}
-            stats={statsMap[container.id]}
-            onStart={handleStart}
-            onStop={handleStop}
-            onRestart={handleRestart}
-            onPause={handlePause}
-            onUnpause={handleUnpause}
-            onRemove={(id, name) => (confirmDelete = { id, name })}
-            onOpenTerminal={(id, name) => (activeTerminal = { id, name })}
-            onViewLogs={(id, name) => (activeLogs = { id, name })}
-            onViewStats={(id, name) => (activeStats = { id, name })}
-            {actionLoading}
-          />
-        {/each}
-      </div>
+      {#if groupByStack && stackGroups.length > 0}
+        <div class="space-y-4">
+          <!-- Stacks Groups -->
+          {#each stackGroups as stack (stack.name)}
+            <ComposeStackCard
+              {stack}
+              {statsMap}
+              onStart={handleStart}
+              onStop={handleStop}
+              onRestart={handleRestart}
+              onPause={handlePause}
+              onUnpause={handleUnpause}
+              onRemove={(id, name) => (confirmDelete = { id, name })}
+              onOpenTerminal={(id, name) => (activeTerminal = { id, name })}
+              onViewLogs={(id, name) => (activeLogs = { id, name })}
+              onViewStats={(id, name) => (activeStats = { id, name })}
+              onStartStack={handleStartStack}
+              onStopStack={handleStopStack}
+              onRestartStack={handleRestartStack}
+              {actionLoading}
+            />
+          {/each}
+
+          <!-- Standalone Containers (Containers without Compose Stack) -->
+          {#if standaloneContainers.length > 0}
+            <div class="pt-2">
+              <div class="flex items-center gap-3 mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Contenedores Individuales ({standaloneContainers.length})
+                </span>
+                <div class="h-px bg-slate-200 dark:bg-slate-800 flex-1"></div>
+              </div>
+              <div class="space-y-3">
+                {#each standaloneContainers as container (container.id)}
+                  <ContainerCard
+                    {container}
+                    stats={statsMap[container.id]}
+                    onStart={handleStart}
+                    onStop={handleStop}
+                    onRestart={handleRestart}
+                    onPause={handlePause}
+                    onUnpause={handleUnpause}
+                    onRemove={(id, name) => (confirmDelete = { id, name })}
+                    onOpenTerminal={(id, name) => (activeTerminal = { id, name })}
+                    onViewLogs={(id, name) => (activeLogs = { id, name })}
+                    onViewStats={(id, name) => (activeStats = { id, name })}
+                    {actionLoading}
+                  />
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+      {:else}
+        <!-- Flat Containers List -->
+        <div class="space-y-3">
+          {#each filteredContainers as container (container.id)}
+            <ContainerCard
+              {container}
+              stats={statsMap[container.id]}
+              onStart={handleStart}
+              onStop={handleStop}
+              onRestart={handleRestart}
+              onPause={handlePause}
+              onUnpause={handleUnpause}
+              onRemove={(id, name) => (confirmDelete = { id, name })}
+              onOpenTerminal={(id, name) => (activeTerminal = { id, name })}
+              onViewLogs={(id, name) => (activeLogs = { id, name })}
+              onViewStats={(id, name) => (activeStats = { id, name })}
+              {actionLoading}
+            />
+          {/each}
+        </div>
+      {/if}
     </div>
     {:else}
       <ImagesView

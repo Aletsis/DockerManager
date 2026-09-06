@@ -32,11 +32,17 @@ export function ResizeTerminal(arg1:string,arg2:number,arg3:number):Promise<void
 
 export function RestartContainer(arg1:string):Promise<void>;
 
+export function RestartStack(arg1:string):Promise<void>;
+
 export function StartContainer(arg1:string):Promise<void>;
+
+export function StartStack(arg1:string):Promise<void>;
 
 export function StartTerminal(arg1:string,arg2:string,arg3:number,arg4:number):Promise<docker.TerminalStartResult>;
 
 export function StopContainer(arg1:string):Promise<void>;
+
+export function StopStack(arg1:string):Promise<void>;
 
 export function UnpauseContainer(arg1:string):Promise<void>;
 

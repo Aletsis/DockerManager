@@ -82,6 +82,15 @@
             {container.state}
           </span>
 
+          {#if container.composeService}
+            <span
+              title="Servicio Docker Compose"
+              class="text-[11px] font-medium px-2 py-0.5 rounded-full border bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800/60 font-mono"
+            >
+              svc: {container.composeService}
+            </span>
+          {/if}
+
           <!-- Short ID -->
           <button
             onclick={copyId}

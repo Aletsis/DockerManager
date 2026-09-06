@@ -8,6 +8,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -106,20 +107,36 @@ func (s *Service) ListContainers(ctx context.Context, all bool) ([]ContainerInfo
 			})
 		}
 
+		composeProject := ""
+		composeService := ""
+		composeWorkingDir := ""
+		composeConfigFile := ""
+		if c.Labels != nil {
+			composeProject = c.Labels["com.docker.compose.project"]
+			composeService = c.Labels["com.docker.compose.service"]
+			composeWorkingDir = c.Labels["com.docker.compose.project.working_dir"]
+			composeConfigFile = c.Labels["com.docker.compose.project.config_files"]
+		}
+
 		result = append(result, ContainerInfo{
-			ID:         c.ID,
-			ShortID:    shortID,
-			Names:      c.Names,
-			Name:       name,
-			Image:      c.Image,
-			ImageID:    c.ImageID,
-			Command:    c.Command,
-			Created:    c.Created,
-			State:      c.State,
-			Status:     c.Status,
-			Ports:      ports,
-			SizeRw:     c.SizeRw,
-			SizeRootFs: c.SizeRootFs,
+			ID:                c.ID,
+			ShortID:           shortID,
+			Names:             c.Names,
+			Name:              name,
+			Image:             c.Image,
+			ImageID:           c.ImageID,
+			Command:           c.Command,
+			Created:           c.Created,
+			State:             c.State,
+			Status:            c.Status,
+			Ports:             ports,
+			SizeRw:            c.SizeRw,
+			SizeRootFs:        c.SizeRootFs,
+			Labels:            c.Labels,
+			ComposeProject:    composeProject,
+			ComposeService:    composeService,
+			ComposeWorkingDir: composeWorkingDir,
+			ComposeConfigFile: composeConfigFile,
 		})
 	}
 	return result, nil
@@ -142,6 +159,147 @@ func (s *Service) RestartContainer(ctx context.Context, id string) error {
 	timeout := 15
 	stopOptions := container.StopOptions{Timeout: &timeout}
 	return s.cli.ContainerRestart(ctx, id, stopOptions)
+}
+
+// StartStack starts all non-running containers belonging to the specified compose project
+func (s *Service) StartStack(ctx context.Context, projectName string) error {
+	projectName = strings.TrimSpace(projectName)
+	if projectName == "" {
+		return fmt.Errorf("el nombre del proyecto compose no puede estar vacío")
+	}
+
+	filterArgs := filters.NewArgs()
+	filterArgs.Add("label", fmt.Sprintf("com.docker.compose.project=%s", projectName))
+
+	containers, err := s.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: filterArgs})
+	if err != nil {
+		return fmt.Errorf("error al listar contenedores del stack %s: %w", projectName, err)
+	}
+	if len(containers) == 0 {
+		return fmt.Errorf("no se encontraron contenedores para el stack %q", projectName)
+	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var errs []string
+
+	for _, c := range containers {
+		if c.State == "running" {
+			continue
+		}
+		wg.Add(1)
+		go func(cid string) {
+			defer wg.Done()
+			if err := s.StartContainer(ctx, cid); err != nil {
+				mu.Lock()
+				short := cid
+				if len(short) > 12 {
+					short = short[:12]
+				}
+				errs = append(errs, fmt.Sprintf("%s: %v", short, err))
+				mu.Unlock()
+			}
+		}(c.ID)
+	}
+	wg.Wait()
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errores al iniciar el stack: %s", strings.Join(errs, "; "))
+	}
+	return nil
+}
+
+// StopStack stops all running containers belonging to the specified compose project
+func (s *Service) StopStack(ctx context.Context, projectName string) error {
+	projectName = strings.TrimSpace(projectName)
+	if projectName == "" {
+		return fmt.Errorf("el nombre del proyecto compose no puede estar vacío")
+	}
+
+	filterArgs := filters.NewArgs()
+	filterArgs.Add("label", fmt.Sprintf("com.docker.compose.project=%s", projectName))
+
+	containers, err := s.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: filterArgs})
+	if err != nil {
+		return fmt.Errorf("error al listar contenedores del stack %s: %w", projectName, err)
+	}
+	if len(containers) == 0 {
+		return fmt.Errorf("no se encontraron contenedores para el stack %q", projectName)
+	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var errs []string
+
+	for _, c := range containers {
+		if c.State != "running" {
+			continue
+		}
+		wg.Add(1)
+		go func(cid string) {
+			defer wg.Done()
+			if err := s.StopContainer(ctx, cid); err != nil {
+				mu.Lock()
+				short := cid
+				if len(short) > 12 {
+					short = short[:12]
+				}
+				errs = append(errs, fmt.Sprintf("%s: %v", short, err))
+				mu.Unlock()
+			}
+		}(c.ID)
+	}
+	wg.Wait()
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errores al detener el stack: %s", strings.Join(errs, "; "))
+	}
+	return nil
+}
+
+// RestartStack restarts all containers belonging to the specified compose project
+func (s *Service) RestartStack(ctx context.Context, projectName string) error {
+	projectName = strings.TrimSpace(projectName)
+	if projectName == "" {
+		return fmt.Errorf("el nombre del proyecto compose no puede estar vacío")
+	}
+
+	filterArgs := filters.NewArgs()
+	filterArgs.Add("label", fmt.Sprintf("com.docker.compose.project=%s", projectName))
+
+	containers, err := s.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: filterArgs})
+	if err != nil {
+		return fmt.Errorf("error al listar contenedores del stack %s: %w", projectName, err)
+	}
+	if len(containers) == 0 {
+		return fmt.Errorf("no se encontraron contenedores para el stack %q", projectName)
+	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var errs []string
+
+	for _, c := range containers {
+		wg.Add(1)
+		go func(cid string) {
+			defer wg.Done()
+			if err := s.RestartContainer(ctx, cid); err != nil {
+				mu.Lock()
+				short := cid
+				if len(short) > 12 {
+					short = short[:12]
+				}
+				errs = append(errs, fmt.Sprintf("%s: %v", short, err))
+				mu.Unlock()
+			}
+		}(c.ID)
+	}
+	wg.Wait()
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errores al reiniciar el stack: %s", strings.Join(errs, "; "))
+	}
+	return nil
 }
 
 // PauseContainer pauses a container

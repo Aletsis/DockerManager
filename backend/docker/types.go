@@ -20,9 +20,14 @@ type ContainerInfo struct {
 	Created    int64         `json:"created"`
 	State      string        `json:"state"`
 	Status     string        `json:"status"`
-	Ports      []PortMapping `json:"ports"`
-	SizeRw     int64         `json:"sizeRw"`
-	SizeRootFs int64         `json:"sizeRootFs"`
+	Ports            []PortMapping     `json:"ports"`
+	SizeRw           int64             `json:"sizeRw"`
+	SizeRootFs       int64             `json:"sizeRootFs"`
+	Labels           map[string]string `json:"labels,omitempty"`
+	ComposeProject   string            `json:"composeProject,omitempty"`
+	ComposeService   string            `json:"composeService,omitempty"`
+	ComposeWorkingDir string           `json:"composeWorkingDir,omitempty"`
+	ComposeConfigFile string           `json:"composeConfigFile,omitempty"`
 }
 
 // SystemOverview provides high-level metrics about the Docker daemon
