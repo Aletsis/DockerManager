@@ -1,0 +1,28 @@
+changelog:
+  categories:
+    - title: "🚀 Features & Capabilities"
+      labels:
+        - "feature"
+        - "enhancement"
+    - title: "🐛 Bug Fixes"
+      labels:
+        - "bug"
+        - "fix"
+        - "bugfix"
+    - title: "🏗️ Architecture & Refactoring"
+      labels:
+        - "refactor"
+        - "arch"
+    - title: "🧪 Testing"
+      labels:
+        - "test"
+        - "tests"
+    - title: "👷 CI/CD & Build"
+      labels:
+        - "ci"
+        - "build"
+        - "chore"
+    - title: "📚 Documentation"
+      labels:
+        - "documentation"
+        - "docs"

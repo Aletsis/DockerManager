@@ -1,0 +1,48 @@
+# git-cliff ~ configuration file
+# https://git-cliff.org/docs/configuration
+
+[changelog]
+# template for the changelog body
+body = """
+{% for group, commits in commits | group_by(attribute="group") %}
+## {{ group }}
+{% for commit in commits %}
+* {% if commit.scope %}**{{ commit.scope }}**: {% endif %}\
+  {{ commit.message | upper_first }} \
+  ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/Aletsis/DockerManager/commit/{{ commit.id }}))\
+{% endfor %}
+{% endfor %}\n
+"""
+# template for the changelog footer
+footer = """
+---
+*Automated release notes generated with Conventional Commits.*
+"""
+# remove leading and trailing whitespace
+trim = true
+
+[git]
+# parse the commits based on https://www.conventionalcommits.org
+conventional_commits = true
+# filter out commits that are not conventional
+filter_unconventional = false
+# process each line of a commit as an individual commit
+split_commits = false
+
+# regex for parsing and grouping commits
+commit_parsers = [
+  { message = "^feat", group = "🚀 Features & Capabilities" },
+  { message = "^fix", group = "🐛 Bug Fixes" },
+  { message = "^refactor", group = "🏗️ Architecture & Refactoring" },
+  { message = "^perf", group = "⚡ Performance Improvements" },
+  { message = "^test", group = "🧪 Testing" },
+  { message = "^ci", group = "👷 CI/CD & Build" },
+  { message = "^doc", group = "📚 Documentation" },
+  { message = "^chore", group = "🧰 Maintenance" },
+  { message = ".*", group = "💼 Other Changes" },
+]
+
+# filter out commits that are not matched by commit parsers
+filter_commits = false
+# sort commits inside sections by oldest order
+sort_commits = "oldest"
