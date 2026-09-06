@@ -8,6 +8,9 @@ import type {
   PruneResult,
   CreateContainerRequest,
   CreateContainerResult,
+  VolumeInfo,
+  VolumeDiskUsageSummary,
+  VolumePruneResult,
 } from '../../types';
 
 /**
@@ -73,4 +76,22 @@ export const dockerApi = {
     return res as unknown as PruneResult;
   },
   pullImage: (name: string): Promise<void> => WailsApp.PullImage(name),
+
+  // Volumes
+  listVolumes: async (): Promise<VolumeInfo[]> => {
+    const res = await WailsApp.ListVolumes();
+    return (res || []) as unknown as VolumeInfo[];
+  },
+  getVolumeDiskUsage: async (): Promise<VolumeDiskUsageSummary> => {
+    const res = await WailsApp.GetVolumeDiskUsage();
+    return res as unknown as VolumeDiskUsageSummary;
+  },
+  inspectVolume: async (name: string): Promise<string> => {
+    return WailsApp.InspectVolume(name);
+  },
+  removeVolume: (name: string, force = false): Promise<void> => WailsApp.RemoveVolume(name, force),
+  pruneVolumes: async (): Promise<VolumePruneResult> => {
+    const res = await WailsApp.PruneVolumes();
+    return res as unknown as VolumePruneResult;
+  },
 };

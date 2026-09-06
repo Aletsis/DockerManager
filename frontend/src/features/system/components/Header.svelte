@@ -11,14 +11,17 @@
     Package,
     ChevronDown,
     HardDrive,
+    Database,
   } from '@lucide/svelte';
-  import type { SystemOverview, DiskUsageSummary } from '../../../types';
+  import type { SystemOverview, DiskUsageSummary, VolumeDiskUsageSummary } from '../../../types';
   import { APP_VERSION } from '../../../shared/version';
 
   let {
     overview,
     diskUsage = null,
-    activeTab = $bindable<'containers' | 'images'>('containers'),
+    volumeDiskUsage = null,
+    volumesCount = 0,
+    activeTab = $bindable<'containers' | 'images' | 'volumes'>('containers'),
     searchQuery = $bindable(''),
     isDark,
     onToggleTheme,
@@ -28,7 +31,9 @@
   } = $props<{
     overview: SystemOverview | null;
     diskUsage?: DiskUsageSummary | null;
-    activeTab: 'containers' | 'images';
+    volumeDiskUsage?: VolumeDiskUsageSummary | null;
+    volumesCount?: number;
+    activeTab: 'containers' | 'images' | 'volumes';
     searchQuery: string;
     isDark: boolean;
     onToggleTheme: () => void;
@@ -91,6 +96,22 @@
         <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" title="{diskUsage.danglingCount} capas huérfanas"></span>
       {/if}
     </button>
+
+    <button
+      onclick={() => (activeTab = 'volumes')}
+      class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer {activeTab === 'volumes' ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
+    >
+      <Database class="w-3.5 h-3.5 shrink-0" />
+      <span>Volúmenes</span>
+      {#if volumesCount !== undefined && volumesCount > 0}
+        <span class="text-[10px] font-mono px-1.5 py-0.2 rounded-full {activeTab === 'volumes' ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'}">
+          {volumesCount}
+        </span>
+      {/if}
+      {#if volumeDiskUsage && volumeDiskUsage.danglingCount > 0}
+        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" title="{volumeDiskUsage.danglingCount} volúmenes huérfanos"></span>
+      {/if}
+    </button>
   </nav>
 {/snippet}
 
@@ -116,6 +137,12 @@
         <Package class="w-3.5 h-3.5 shrink-0" />
         <span>{overview.images} <span class="hidden sm:inline">Imágenes</span></span>
       </div>
+      {#if volumesCount > 0}
+        <div class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 font-medium whitespace-nowrap shrink-0">
+          <Database class="w-3.5 h-3.5 shrink-0" />
+          <span>{volumesCount} <span class="hidden sm:inline">Volúmenes</span></span>
+        </div>
+      {/if}
     </div>
   {/if}
 {/snippet}

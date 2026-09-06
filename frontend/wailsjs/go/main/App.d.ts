@@ -3,6 +3,7 @@
 import {container} from '../models';
 import {image} from '../models';
 import {system} from '../models';
+import {volume} from '../models';
 import {terminal} from '../models';
 
 export function CloseTerminal(arg1:string):Promise<void>;
@@ -19,11 +20,17 @@ export function GetDiskUsage():Promise<image.DiskUsageSummary>;
 
 export function GetOverview():Promise<system.Overview>;
 
+export function GetVolumeDiskUsage():Promise<volume.DiskUsageSummary>;
+
 export function InspectContainer(arg1:string):Promise<string>;
+
+export function InspectVolume(arg1:string):Promise<string>;
 
 export function ListContainers(arg1:boolean):Promise<Array<container.Container>>;
 
 export function ListImages():Promise<Array<image.Image>>;
+
+export function ListVolumes():Promise<Array<volume.Volume>>;
 
 export function OpenURL(arg1:string):Promise<void>;
 
@@ -31,11 +38,15 @@ export function PauseContainer(arg1:string):Promise<void>;
 
 export function PruneImages(arg1:boolean):Promise<image.PruneResult>;
 
+export function PruneVolumes():Promise<volume.PruneResult>;
+
 export function PullImage(arg1:string):Promise<void>;
 
 export function RemoveContainer(arg1:string,arg2:boolean):Promise<void>;
 
 export function RemoveImage(arg1:string,arg2:boolean):Promise<void>;
+
+export function RemoveVolume(arg1:string,arg2:boolean):Promise<void>;
 
 export function ResizeTerminal(arg1:string,arg2:number,arg3:number):Promise<void>;
 

@@ -11,11 +11,13 @@ import (
 	stackapp "dockermanager/internal/application/stack"
 	systemapp "dockermanager/internal/application/system"
 	terminalapp "dockermanager/internal/application/terminal"
+	volumeapp "dockermanager/internal/application/volume"
 
 	containerdomain "dockermanager/internal/domain/container"
 	imagedomain "dockermanager/internal/domain/image"
 	systemdomain "dockermanager/internal/domain/system"
 	terminaldomain "dockermanager/internal/domain/terminal"
+	volumedomain "dockermanager/internal/domain/volume"
 
 	dockerinfra "dockermanager/internal/infrastructure/docker"
 	terminalinfra "dockermanager/internal/infrastructure/terminal"
@@ -47,6 +49,12 @@ type App struct {
 	pullImageUC   *imageapp.PullImageUseCase
 	removeImageUC *imageapp.RemoveImageUseCase
 	pruneImagesUC *imageapp.PruneImagesUseCase
+
+	listVolumesUC     *volumeapp.ListVolumesUseCase
+	volumeDiskUsageUC *volumeapp.GetVolumeDiskUsageUseCase
+	inspectVolumeUC   *volumeapp.InspectVolumeUseCase
+	removeVolumeUC    *volumeapp.RemoveVolumeUseCase
+	pruneVolumesUC    *volumeapp.PruneVolumesUseCase
 
 	overviewUC *systemapp.GetOverviewUseCase
 	terminalUC *terminalapp.ManageTerminalUseCase
@@ -97,6 +105,7 @@ func (a *App) ensureInitialized() error {
 	// Domain Ports implemented by Infrastructure Adapters
 	containerRepo := dockerinfra.NewContainerRepository(cli)
 	imageRepo := dockerinfra.NewImageRepository(cli)
+	volumeRepo := dockerinfra.NewVolumeRepository(cli)
 	stackRepo := dockerinfra.NewStackRepository(cli)
 	networkRepo := dockerinfra.NewNetworkRepository(cli)
 	systemRepo := dockerinfra.NewSystemRepository(cli)
@@ -116,6 +125,12 @@ func (a *App) ensureInitialized() error {
 	a.pullImageUC = imageapp.NewPullImageUseCase(imageRepo)
 	a.removeImageUC = imageapp.NewRemoveImageUseCase(imageRepo)
 	a.pruneImagesUC = imageapp.NewPruneImagesUseCase(imageRepo)
+
+	a.listVolumesUC = volumeapp.NewListVolumesUseCase(volumeRepo)
+	a.volumeDiskUsageUC = volumeapp.NewGetVolumeDiskUsageUseCase(volumeRepo)
+	a.inspectVolumeUC = volumeapp.NewInspectVolumeUseCase(volumeRepo)
+	a.removeVolumeUC = volumeapp.NewRemoveVolumeUseCase(volumeRepo)
+	a.pruneVolumesUC = volumeapp.NewPruneVolumesUseCase(volumeRepo)
 
 	a.overviewUC = systemapp.NewGetOverviewUseCase(systemRepo)
 	a.terminalUC = terminalapp.NewManageTerminalUseCase(a.terminalService)
@@ -368,3 +383,44 @@ func (a *App) CreateContainer(req containerdomain.CreateSpec) (*containerdomain.
 	}
 	return a.createUC.Execute(a.ctx, req)
 }
+
+// ListVolumes returns list of all volumes with usage data
+func (a *App) ListVolumes() ([]volumedomain.Volume, error) {
+	if err := a.ensureInitialized(); err != nil {
+		return nil, err
+	}
+	return a.listVolumesUC.Execute(a.ctx)
+}
+
+// GetVolumeDiskUsage returns aggregated metrics of volume storage
+func (a *App) GetVolumeDiskUsage() (*volumedomain.DiskUsageSummary, error) {
+	if err := a.ensureInitialized(); err != nil {
+		return nil, err
+	}
+	return a.volumeDiskUsageUC.Execute(a.ctx)
+}
+
+// InspectVolume returns raw formatted JSON configuration of a volume
+func (a *App) InspectVolume(name string) (string, error) {
+	if err := a.ensureInitialized(); err != nil {
+		return "", err
+	}
+	return a.inspectVolumeUC.Execute(a.ctx, name)
+}
+
+// RemoveVolume removes a volume by name
+func (a *App) RemoveVolume(name string, force bool) error {
+	if err := a.ensureInitialized(); err != nil {
+		return err
+	}
+	return a.removeVolumeUC.Execute(a.ctx, name, force)
+}
+
+// PruneVolumes cleans dangling or unused volumes
+func (a *App) PruneVolumes() (*volumedomain.PruneResult, error) {
+	if err := a.ensureInitialized(); err != nil {
+		return nil, err
+	}
+	return a.pruneVolumesUC.Execute(a.ctx)
+}
+

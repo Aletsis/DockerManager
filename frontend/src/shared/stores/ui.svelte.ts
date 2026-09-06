@@ -1,4 +1,4 @@
-export type TabType = 'containers' | 'images';
+export type TabType = 'containers' | 'images' | 'volumes';
 
 export interface ToastNotification {
   text: string;
@@ -21,6 +21,7 @@ class UiStore {
   activeLogs = $state<{ id: string; name: string } | null>(null);
   activeStats = $state<{ id: string; name: string } | null>(null);
   activeInspect = $state<{ id: string; name: string } | null>(null);
+  activeVolumeInspect = $state<{ name: string } | null>(null);
   confirmDelete = $state<{ id: string; name: string } | null>(null);
   isCreateModalOpen = $state<boolean>(false);
   createModalInitialImage = $state<string>('');
@@ -91,6 +92,14 @@ class UiStore {
 
   closeInspect() {
     this.activeInspect = null;
+  }
+
+  openVolumeInspect(name: string) {
+    this.activeVolumeInspect = { name };
+  }
+
+  closeVolumeInspect() {
+    this.activeVolumeInspect = null;
   }
 
   openConfirmDelete(id: string, name: string) {

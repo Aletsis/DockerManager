@@ -3,6 +3,7 @@
   import LogsModal from '../../features/containers/modals/LogsModal.svelte';
   import StatsModal from '../../features/containers/modals/StatsModal.svelte';
   import InspectModal from '../../features/containers/modals/InspectModal.svelte';
+  import VolumeInspectModal from '../../features/volumes/modals/VolumeInspectModal.svelte';
   import ConfirmModal from './ConfirmModal.svelte';
   import CreateContainerModal from '../../features/containers/modals/CreateContainerModal.svelte';
   import { uiStore } from '../stores/ui.svelte';
@@ -57,6 +58,12 @@
   containerId={uiStore.activeInspect?.id || null}
   containerName={uiStore.activeInspect?.name || ''}
   onClose={() => uiStore.closeInspect()}
+/>
+
+<!-- Volume Inspect Modal -->
+<VolumeInspectModal
+  volumeName={uiStore.activeVolumeInspect?.name || null}
+  onClose={() => uiStore.closeVolumeInspect()}
 />
 
 <!-- Confirm Delete Container Modal -->

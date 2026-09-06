@@ -30,8 +30,16 @@ export function GetOverview() {
   return window['go']['main']['App']['GetOverview']();
 }
 
+export function GetVolumeDiskUsage() {
+  return window['go']['main']['App']['GetVolumeDiskUsage']();
+}
+
 export function InspectContainer(arg1) {
   return window['go']['main']['App']['InspectContainer'](arg1);
+}
+
+export function InspectVolume(arg1) {
+  return window['go']['main']['App']['InspectVolume'](arg1);
 }
 
 export function ListContainers(arg1) {
@@ -40,6 +48,10 @@ export function ListContainers(arg1) {
 
 export function ListImages() {
   return window['go']['main']['App']['ListImages']();
+}
+
+export function ListVolumes() {
+  return window['go']['main']['App']['ListVolumes']();
 }
 
 export function OpenURL(arg1) {
@@ -54,6 +66,10 @@ export function PruneImages(arg1) {
   return window['go']['main']['App']['PruneImages'](arg1);
 }
 
+export function PruneVolumes() {
+  return window['go']['main']['App']['PruneVolumes']();
+}
+
 export function PullImage(arg1) {
   return window['go']['main']['App']['PullImage'](arg1);
 }
@@ -64,6 +80,10 @@ export function RemoveContainer(arg1, arg2) {
 
 export function RemoveImage(arg1, arg2) {
   return window['go']['main']['App']['RemoveImage'](arg1, arg2);
+}
+
+export function RemoveVolume(arg1, arg2) {
+  return window['go']['main']['App']['RemoveVolume'](arg1, arg2);
 }
 
 export function ResizeTerminal(arg1, arg2, arg3) {

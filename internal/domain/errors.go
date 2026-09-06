@@ -15,4 +15,6 @@ var (
 	ErrNetworkNotFound         = errors.New("network not found")
 	ErrStackNotFound           = errors.New("compose stack not found")
 	ErrSessionNotFound         = errors.New("terminal session not found")
+	ErrVolumeNotFound          = errors.New("volume not found")
+	ErrVolumeInUse             = errors.New("volume is in use by a container")
 )
