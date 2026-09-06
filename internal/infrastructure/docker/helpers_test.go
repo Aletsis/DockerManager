@@ -47,6 +47,7 @@ func TestBuildContainerConfig(t *testing.T) {
 		Ports:         []string{"8080:80/tcp", "9090:90/udp"},
 		Volumes:       []string{"/tmp/data:/data:rw"},
 		Env:           []string{"ENV_VAR=123"},
+		Cmd:           []string{"nginx", "-g", "daemon off;"},
 		RestartPolicy: "always",
 	}
 
@@ -57,6 +58,9 @@ func TestBuildContainerConfig(t *testing.T) {
 
 	if cfg.Image != "nginx:alpine" {
 		t.Errorf("Expected Image 'nginx:alpine', got %q", cfg.Image)
+	}
+	if len(cfg.Cmd) != 3 || cfg.Cmd[0] != "nginx" {
+		t.Errorf("Unexpected Cmd: %v", cfg.Cmd)
 	}
 	if len(cfg.Env) != 1 || cfg.Env[0] != "ENV_VAR=123" {
 		t.Errorf("Unexpected Env: %v", cfg.Env)

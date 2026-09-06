@@ -29,6 +29,7 @@ func TestContainerIntegration(t *testing.T) {
 	createSpec := containerdomain.CreateSpec{
 		Image:     "alpine:latest",
 		Name:      testContainerName,
+		Cmd:       []string{"sleep", "30"},
 		AutoStart: false,
 	}
 

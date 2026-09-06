@@ -49,6 +49,7 @@ type Stats struct {
 type CreateSpec struct {
 	Image         string   `json:"image"`
 	Name          string   `json:"name,omitempty"`
+	Cmd           []string `json:"cmd,omitempty"`
 	Ports         []string `json:"ports,omitempty"`
 	Volumes       []string `json:"volumes,omitempty"`
 	Env           []string `json:"env,omitempty"`

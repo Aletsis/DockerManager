@@ -143,6 +143,7 @@ func BuildContainerConfig(spec containerdomain.CreateSpec) (*dockertypes.Config,
 
 	containerConfig := &dockertypes.Config{
 		Image:        spec.Image,
+		Cmd:          spec.Cmd,
 		Env:          cleanEnv,
 		ExposedPorts: exposedPorts,
 	}
