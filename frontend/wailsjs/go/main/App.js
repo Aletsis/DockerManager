@@ -26,6 +26,14 @@ export function GetOverview() {
   return window['go']['main']['App']['GetOverview']();
 }
 
+export function InspectContainer(arg1) {
+  return window['go']['main']['App']['InspectContainer'](arg1);
+}
+
+export function OpenURL(arg1) {
+  return window['go']['main']['App']['OpenURL'](arg1);
+}
+
 export function ListContainers(arg1) {
   return window['go']['main']['App']['ListContainers'](arg1);
 }

@@ -14,5 +14,6 @@ type Repository interface {
 	Remove(ctx context.Context, id string, force bool) error
 	GetLogs(ctx context.Context, id string, tail int) (string, error)
 	GetStats(ctx context.Context, id string) (*Stats, error)
+	Inspect(ctx context.Context, id string) (string, error)
 	Create(ctx context.Context, spec CreateSpec) (*CreateResult, error)
 }

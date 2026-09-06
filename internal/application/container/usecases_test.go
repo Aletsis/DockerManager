@@ -14,6 +14,7 @@ import (
 type mockContainerRepo struct {
 	containers []containerdomain.Container
 	stats      *containerdomain.Stats
+	inspect    string
 	logs       string
 	createResp *containerdomain.CreateResult
 	err        error
@@ -87,6 +88,11 @@ func (m *mockContainerRepo) GetLogs(ctx context.Context, id string, tail int) (s
 func (m *mockContainerRepo) GetStats(ctx context.Context, id string) (*containerdomain.Stats, error) {
 	m.lastID = id
 	return m.stats, m.err
+}
+
+func (m *mockContainerRepo) Inspect(ctx context.Context, id string) (string, error) {
+	m.lastID = id
+	return m.inspect, m.err
 }
 
 func (m *mockContainerRepo) Create(ctx context.Context, spec containerdomain.CreateSpec) (*containerdomain.CreateResult, error) {
@@ -176,8 +182,9 @@ func TestCreateContainerUseCase(t *testing.T) {
 
 func TestGetTelemetryUseCase(t *testing.T) {
 	mock := &mockContainerRepo{
-		logs:  "system ready\nlistening on 80\n",
-		stats: &containerdomain.Stats{ID: "c1", CPUPercentage: 12.5},
+		logs:    "system ready\nlistening on 80\n",
+		stats:   &containerdomain.Stats{ID: "c1", CPUPercentage: 12.5},
+		inspect: "{\"Id\": \"c1\"}",
 	}
 	uc := containerapp.NewGetTelemetryUseCase(mock)
 	ctx := context.Background()
@@ -199,5 +206,13 @@ func TestGetTelemetryUseCase(t *testing.T) {
 	}
 	if stats.CPUPercentage != 12.5 {
 		t.Errorf("expected CPU 12.5, got %f", stats.CPUPercentage)
+	}
+
+	insp, err := uc.Inspect(ctx, "c1")
+	if err != nil {
+		t.Fatalf("unexpected error inspecting: %v", err)
+	}
+	if insp != "{\"Id\": \"c1\"}" {
+		t.Errorf("expected {\"Id\": \"c1\"}, got %s", insp)
 	}
 }

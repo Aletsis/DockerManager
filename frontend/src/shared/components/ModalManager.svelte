@@ -2,6 +2,7 @@
   import TerminalModal from '../../features/terminal/modals/TerminalModal.svelte';
   import LogsModal from '../../features/containers/modals/LogsModal.svelte';
   import StatsModal from '../../features/containers/modals/StatsModal.svelte';
+  import InspectModal from '../../features/containers/modals/InspectModal.svelte';
   import ConfirmModal from './ConfirmModal.svelte';
   import CreateContainerModal from '../../features/containers/modals/CreateContainerModal.svelte';
   import { uiStore } from '../stores/ui.svelte';
@@ -49,6 +50,13 @@
   containerId={uiStore.activeStats?.id || null}
   containerName={uiStore.activeStats?.name || ''}
   onClose={() => uiStore.closeStats()}
+/>
+
+<!-- Inspect Modal -->
+<InspectModal
+  containerId={uiStore.activeInspect?.id || null}
+  containerName={uiStore.activeInspect?.name || ''}
+  onClose={() => uiStore.closeInspect()}
 />
 
 <!-- Confirm Delete Container Modal -->

@@ -33,6 +33,10 @@ export const dockerApi = {
   getContainerLogs: async (id: string, tail = 200): Promise<string> => {
     return WailsApp.GetContainerLogs(id, tail);
   },
+  inspectContainer: async (id: string): Promise<string> => {
+    return WailsApp.InspectContainer(id);
+  },
+  openURL: (url: string): Promise<void> => WailsApp.OpenURL(url),
   startContainer: (id: string): Promise<void> => WailsApp.StartContainer(id),
   stopContainer: (id: string): Promise<void> => WailsApp.StopContainer(id),
   restartContainer: (id: string): Promise<void> => WailsApp.RestartContainer(id),

@@ -250,6 +250,19 @@ func (a *App) GetContainerStats(id string) (*containerdomain.Stats, error) {
 	return a.telemetryUC.GetStats(a.ctx, id)
 }
 
+// InspectContainer returns raw formatted JSON configuration of a container
+func (a *App) InspectContainer(id string) (string, error) {
+	if err := a.ensureInitialized(); err != nil {
+		return "", err
+	}
+	return a.telemetryUC.Inspect(a.ctx, id)
+}
+
+// OpenURL opens the given URL in the user's default web browser
+func (a *App) OpenURL(url string) {
+	runtime.BrowserOpenURL(a.ctx, url)
+}
+
 // StartTerminal starts an interactive PTY shell inside a container
 func (a *App) StartTerminal(containerID string, shell string, rows uint, cols uint) (*terminaldomain.StartResult, error) {
 	if err := a.ensureInitialized(); err != nil {

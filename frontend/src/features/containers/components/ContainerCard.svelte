@@ -13,7 +13,10 @@
     Globe,
     Clock,
     Network,
+    ExternalLink,
+    Code2,
   } from '@lucide/svelte';
+  import { BrowserOpenURL } from '../../../../wailsjs/runtime';
   import type { ContainerInfo } from '../../../types';
   import { formatBytes, getStateColor, formatUptime } from '../../../shared/utils/utils';
   import { containersStore } from '../stores/containers.svelte';
@@ -41,6 +44,16 @@
     navigator.clipboard.writeText(container.id);
     copied = true;
     setTimeout(() => (copied = false), 1500);
+  }
+
+  function openPortUrl(e: MouseEvent, publicPort: number) {
+    e.stopPropagation();
+    const url = `http://localhost:${publicPort}`;
+    try {
+      BrowserOpenURL(url);
+    } catch {
+      window.open(url, '_blank');
+    }
   }
 </script>
 
@@ -106,11 +119,22 @@
           <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
             <Globe class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
             {#each container.ports as p, idx}
-              <span
-                class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
-              >
-                {p.publicPort ? `${p.publicPort}:${p.privatePort}` : `${p.privatePort}/${p.type}`}
-              </span>
+              {#if p.publicPort}
+                <button
+                  onclick={(e) => openPortUrl(e, p.publicPort)}
+                  title={`Abrir http://localhost:${p.publicPort} en el navegador`}
+                  class="flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer group"
+                >
+                  <span>{p.publicPort}:{p.privatePort}</span>
+                  <ExternalLink class="w-2.5 h-2.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                </button>
+              {:else}
+                <span
+                  class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                >
+                  {p.privatePort}/{p.type}
+                </span>
+              {/if}
             {/each}
           </div>
         {/if}
@@ -263,6 +287,15 @@
         class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
       >
         <ScrollText class="w-4 h-4" />
+      </button>
+
+      <!-- Inspect JSON -->
+      <button
+        onclick={() => uiStore.openInspect(container.id, container.name)}
+        title="Inspeccionar configuración (Docker Inspect JSON)"
+        class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-600 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400 transition-colors cursor-pointer"
+      >
+        <Code2 class="w-4 h-4" />
       </button>
 
       <!-- Stats Monitor -->

@@ -20,6 +20,7 @@ class UiStore {
   activeTerminal = $state<{ id: string; name: string } | null>(null);
   activeLogs = $state<{ id: string; name: string } | null>(null);
   activeStats = $state<{ id: string; name: string } | null>(null);
+  activeInspect = $state<{ id: string; name: string } | null>(null);
   confirmDelete = $state<{ id: string; name: string } | null>(null);
   isCreateModalOpen = $state<boolean>(false);
   createModalInitialImage = $state<string>('');
@@ -82,6 +83,14 @@ class UiStore {
 
   closeStats() {
     this.activeStats = null;
+  }
+
+  openInspect(id: string, name: string) {
+    this.activeInspect = { id, name };
+  }
+
+  closeInspect() {
+    this.activeInspect = null;
   }
 
   openConfirmDelete(id: string, name: string) {

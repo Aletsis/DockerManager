@@ -14,6 +14,10 @@ export function GetDiskUsage():Promise<docker.DiskUsageSummary>;
 
 export function GetOverview():Promise<docker.SystemOverview>;
 
+export function InspectContainer(arg1:string):Promise<string>;
+
+export function OpenURL(arg1:string):Promise<void>;
+
 export function ListContainers(arg1:boolean):Promise<Array<docker.ContainerInfo>>;
 
 export function ListImages():Promise<Array<docker.ImageInfo>>;

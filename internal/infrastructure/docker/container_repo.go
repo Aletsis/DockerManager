@@ -159,6 +159,20 @@ func (r *ContainerRepository) GetStats(ctx context.Context, id string) (*contain
 	return CalculateContainerStats(stats.ID, stats.Name, &stats), nil
 }
 
+// Inspect returns formatted inspect JSON of the container
+func (r *ContainerRepository) Inspect(ctx context.Context, id string) (string, error) {
+	_, raw, err := r.client.cli.ContainerInspectWithRaw(ctx, id, false)
+	if err != nil {
+		return "", fmt.Errorf("failed to inspect container: %w", err)
+	}
+
+	var prettyJSON bytes.Buffer
+	if err := json.Indent(&prettyJSON, raw, "", "  "); err == nil {
+		return prettyJSON.String(), nil
+	}
+	return string(raw), nil
+}
+
 // Create builds and creates a container based on the domain spec
 func (r *ContainerRepository) Create(ctx context.Context, spec containerdomain.CreateSpec) (*containerdomain.CreateResult, error) {
 	containerConfig, hostConfig, err := BuildContainerConfig(spec)

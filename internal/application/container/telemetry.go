@@ -25,3 +25,8 @@ func (uc *GetTelemetryUseCase) GetLogs(ctx context.Context, id string, tail int)
 func (uc *GetTelemetryUseCase) GetStats(ctx context.Context, id string) (*containerdomain.Stats, error) {
 	return uc.repo.GetStats(ctx, id)
 }
+
+// Inspect returns container inspect JSON
+func (uc *GetTelemetryUseCase) Inspect(ctx context.Context, id string) (string, error) {
+	return uc.repo.Inspect(ctx, id)
+}
